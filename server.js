@@ -22,6 +22,20 @@ app.use(express.urlencoded({extended: true}));
 // 要讓 express 認得 json (放最前面後面的才會認得)
 app.use(express.json());
 
+// 啟用 express-session
+const expressSession = require("express-session");
+// session-file-store 將 session 存在硬碟
+let FileStore = require("session-file-store")(expressSession);
+app.use(expressSession({
+    store: new FileStore({
+        path: path.join(__dirname, "sessions")
+    }),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+}));
+
+
 // 初始時間
 app.use((req, res, next) => {
     let current = new Date();
@@ -40,6 +54,10 @@ app.use((req, res, next) => {
     next()
 });
 
+// 會員登入的 router
+let memberRouter = require("./routers/member");
+app.use("/api/member", memberRouter);
+// 註冊+登入+登出的 router
 let authRouter = require("./routers/auth");
 app.use("/api/auth", authRouter);
 

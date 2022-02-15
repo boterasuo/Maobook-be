@@ -60,5 +60,50 @@ router.post("/register",
         console.log("儲存結果", result);
         res.json({message: "ok"});
     });
+    // TODO: 登入驗證 (尚未註冊錯誤訊息回傳)
+
+// 登入的 Router
+router.post("/login", async (req, res, next) => {
+    // 確認有無這個帳號
+    let [member] = await connection.execute("SELECT * FROM users WHERE email=?", [req.body.email]);
+    console.log("會員資料: ", member);
+    if (member.length === 0) {
+        // 查不到 --> 尚未註冊
+        return res.status(400).json({
+            msg: "尚未註冊",
+        });
+    };
+    member = member[0];
+
+    // 若帳號存在 --> 比對密碼
+    let result = await bcrypt.compare(req.body.password, member.password);
+    if (!result) {
+        // 如果比對失敗
+        return res.status(400).json({
+            msg: "帳號或密碼錯誤",
+        });
+    };
+    // 整理需要的資料
+    let returnMember = {
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        image: member.image,
+    };
+    // 如果密碼比對成功 --> 記錄在 session
+    // 寫 session
+    req.session.member = returnMember;
+
+    res.json({
+        data: returnMember,
+    });
+
+});
+
+// 登出的 Router
+router.get("/logout", (req, res, next) => {
+    req.session.member = null;
+    res.sendStatus(202);
+});
 
 module.exports = router;
