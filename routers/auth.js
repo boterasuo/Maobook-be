@@ -60,7 +60,6 @@ router.post("/register",
         console.log("儲存結果", result);
         res.json({message: "ok"});
     });
-    // TODO: 登入驗證 (尚未註冊錯誤訊息回傳)
 
 // 登入的 Router
 router.post("/login", async (req, res, next) => {
@@ -70,7 +69,7 @@ router.post("/login", async (req, res, next) => {
     if (member.length === 0) {
         // 查不到 --> 尚未註冊
         return res.status(400).json({
-            msg: "尚未註冊",
+            msg: "尚未註冊！",
         });
     };
     member = member[0];
@@ -80,7 +79,7 @@ router.post("/login", async (req, res, next) => {
     if (!result) {
         // 如果比對失敗
         return res.status(400).json({
-            msg: "帳號或密碼錯誤",
+            msg: "帳號或密碼錯誤！",
         });
     };
     // 整理需要的資料
