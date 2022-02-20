@@ -35,6 +35,8 @@ app.use(expressSession({
     saveUninitialized: false,
 }));
 
+// 靜態檔案
+app.use("/static", express.static(path.join(__dirname, "public")));
 
 // 初始時間
 app.use((req, res, next) => {

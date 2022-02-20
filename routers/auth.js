@@ -10,7 +10,7 @@ const moment = require("moment");
 const { body, validationResult } = require("express-validator");
 const registerRules = [
     // 檢查 email password confirmPassword 是否符合格式
-    body("name").isLength({min: 1}).withMessage("請填寫姓名欄位"),
+    body("name").isLength({min: 1}).withMessage("此欄位不可為空"),
     body("email").isEmail().withMessage("Email 欄位請填寫正確格式"),
     body("password").isLength({min: 8}).withMessage("密碼長度至少為 8"),
     body("confirmPassword")
@@ -64,6 +64,7 @@ router.post("/register",
 // 登入的 Router
 router.post("/login", async (req, res, next) => {
     // 確認有無這個帳號
+    console.log(req.body.email);
     let [member] = await connection.execute("SELECT * FROM users WHERE email=?", [req.body.email]);
     console.log("會員資料: ", member);
     if (member.length === 0) {

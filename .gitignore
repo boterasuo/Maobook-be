@@ -1,6 +1,8 @@
 node_modules
 .env
 .vscode
+public/uploads/*
+sessions/*
 
 helptesting
 helpnotes.md
