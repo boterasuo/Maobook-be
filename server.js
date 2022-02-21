@@ -62,6 +62,9 @@ app.use("/api/member", memberRouter);
 // 註冊+登入+登出的 router
 let authRouter = require("./routers/auth");
 app.use("/api/auth", authRouter);
+// 寵物相關的 router
+let petRouter = require("./routers/pets");
+app.use("/api/pet", petRouter);
 
 // 既然前面都比對不到, 那表示這裡是 404 (最後面)
 app.use((req, res, next) => {

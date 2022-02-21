@@ -3,6 +3,7 @@ const router = express.Router();
 const connection = require("../utils/db");
 const { checkLogin } = require("../middlewares/auth");
 const path = require("path");
+const moment = require("moment");
 
 // /api/member
 // checkLogin 中間件會對 member 這個 router 有效
@@ -16,7 +17,7 @@ router.get("/", (req, res, next) => {
 // /api/member/info
 router.get("/info", async (req, res, next) => {
     let [userInfo] = await connection.execute("SELECT * FROM users WHERE id=?", [req.session.member.id]);
-    console.log("會員詳細資料", userInfo);
+    // console.log("會員詳細資料", userInfo);
     userInfo = userInfo[0];
     let returnUserInfo = {
         id: userInfo.id,
@@ -28,7 +29,7 @@ router.get("/info", async (req, res, next) => {
         birthday: userInfo.birthday,
         address: userInfo.living_address,
     };
-    console.log("returnUserInfo: ", returnUserInfo);
+    // console.log("returnUserInfo: ", returnUserInfo);
     res.json({
         data: returnUserInfo,
     })
@@ -73,7 +74,8 @@ const uploader = multer({
 router.post("/edit", 
     uploader.single("image"),
     async (req, res, next) => {
-        // 處理 NULL string
+        console.log("編輯會員資料", req.body)
+        // 處理初始的 NULL string
         if(req.body.gender === "null") {
             req.body.gender = null;
         } 
@@ -86,38 +88,28 @@ router.post("/edit",
 
         // 處理圖片
         console.log("req.file:", req.file);
+        let sql = "UPDATE users SET name=?, gender=?, mobile=?, birthday=?, living_address=?";
+        let saveData = [req.body.name, req.body.gender, req.body.mobile, req.body.birthday, req.body.address];
+        // 判斷是否有上傳圖檔 (更新大頭貼)
         if(req.file) {
+            // 有上傳圖檔再寫入資料庫
             let filename = req.file ? "/static/uploads/" + req.file.filename : "";
-            console.log("filename:", filename);
-            // 儲存到資料庫
-            let [result] = await connection.execute(
-                "UPDATE users SET name=?, image=?, gender=?, mobile=?, birthday=?, living_address=? WHERE id=?", 
-                [req.body.name, filename, req.body.gender, req.body.mobile, req.body.birthday, req.body.address, req.body.id]
-            );
-            console.log(result);
-            if (result) {
-                res.json({message: "ok"})
-            } else {
-                res.status(400).json({message: "錯誤"});
-            }
+            // console.log("filename:", filename);
+            sql += ", image=? ";
+            saveData.push(filename);
+        } 
+        sql += " WHERE id=?";
+        saveData.push(req.body.id); 
+        let [result] = await connection.execute(sql, saveData);
+        console.log(result);
+        if (result) {
+            res.json({message: "ok"})
         } else {
-            let [result] = await connection.execute(
-                "UPDATE users SET name=?, gender=?, mobile=?, birthday=?, living_address=? WHERE id=?", 
-                [req.body.name, req.body.gender, req.body.mobile, req.body.birthday, req.body.address, req.body.id]
-            );
-            if (result) {
-                res.json({message: "ok"})
-            } else {
-                res.status(400).json({message: "錯誤"});
-            }
+            res.status(400).json({message: "錯誤"});
         }
-        // console.log(result);
-        // if (result) {
-        //     res.json({message: "ok"})
-        // } else {
-        //     res.status(400).json({message: "錯誤"});
-        // }
-        
 });
+
+
+
 
 module.exports = router;
