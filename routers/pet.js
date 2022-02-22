@@ -13,7 +13,33 @@ router.get("/", async (req, res, next) => {
     let [petList] = await connection.execute("SELECT * FROM pets WHERE user_id=?", [req.session.member.id]);
     // console.log(petList);
     res.json({data:petList});
-})
+});
+
+// api/pet/:petId
+router.get("/:petId", async (req, res, next) => {
+    // 抓取最新一筆身高
+    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE created_at=(SELECT MAX(created_at) FROM pet_height WHERE pet_id=?)", [req.params.petId]);
+    if(petHeight.length) {
+        petHeight = petHeight[0].height;
+    }else petHeight="";
+    // 抓取最新一筆體重
+    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE created_at=(SELECT MAX(created_at) FROM pet_weight WHERE pet_id=?)", [req.params.petId]);
+    if(petWeight.length) {
+        petWeight = petWeight[0].weight;
+    } else petWeight="";
+    // 抓取疫苗資訊
+    let [petVaccine] = await connection.execute("SELECT * FROM vaccination WHERE pet_id=?", [req.params.petId]);
+    const vaccineArr = petVaccine.map(v => `${v.vaccine_category_id}`);
+    // 抓取健康狀態資訊
+    let [petHealth] = await connection.execute("SELECT * FROM pet_illness WHERE pet_id=?", [req.params.petId]);
+    const healthArr = petHealth.map(v => `${v.illness_category_id}`);
+    res.json({
+        height: petHeight,
+        weight: petWeight,
+        vaccine: vaccineArr, 
+        health: healthArr,
+    });
+});
 
 // /api/pet/add
 const multer = require("multer");
@@ -65,14 +91,18 @@ const addPetRules = [
         }
     }).withMessage("請選擇早於今天的日期"),
     body("birthday").custom((value, {req}) => {
-        if(value.length && req.body.arrDay > 0) {
+        if(value.length && req.body.arrDay.length > 0) {
             const birthday = Date.parse(value);
             const arrDay = Date.parse(req.body.arrDay);
             return birthday <= arrDay;
+        } else if (value.length) {
+            const today = Date.parse(moment().format("YYYY-MM-DD"));
+            const birthday = Date.parse(value);
+            return birthday <= today;
         } else {
             return true;
         }
-    }).withMessage("毛孩生日不可晚於到家日"),
+    }).withMessage("毛孩生日不可晚於到家日或今天日期"),
     body("cate").not().isEmpty().withMessage("此欄位不可為空"),
 ];
 
@@ -80,11 +110,12 @@ router.post("/add",
     uploader.single("image"),
     addPetRules,
     async (req, res, next) => {
-        // console.log(req.body);
+        console.log(req.body);
         const validateResult = validationResult(req);
         if(!validateResult.isEmpty()) {
             let error = validateResult.mapped();
             console.log("毛孩資料錯誤", error);
+            console.log(error);
             let errKeys = Object.keys(error);
             let errObj={};
             errKeys.forEach(key => errObj[key]=error[key].msg);
@@ -92,10 +123,10 @@ router.post("/add",
             return res.status(400).json(
                 errObj
             );
-        }
+        };
         // 存入資料庫
         const addPetTime = moment().format("YYYY-MM-DD kk:mm:ss");
-        let ageCate; // 根據生日判斷 age category
+        let ageCate = ""; // 根據生日判斷 age category
         if(req.body.birthday.length > 0) {
             const today = moment(moment().format("YYYY-MM-DD"));
             const birthday = moment(req.body.birthday);
@@ -117,6 +148,7 @@ router.post("/add",
         } else {
             filename = "";
         }
+        console.log("filename", filename);
 
         let sql = "INSERT INTO pets (user_id, category, name, gender, image, birthday, age_category, adoptime, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         let saveData = [req.body.id, req.body.cate, req.body.name, req.body.gender, filename, req.body.birthday, ageCate, req.body.arrDay, 1, addPetTime];

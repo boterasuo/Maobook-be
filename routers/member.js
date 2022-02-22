@@ -71,20 +71,56 @@ const uploader = multer({
 });
 
 // /api/member/edit
+// 後端檢查: 姓名欄位, 生日, 手機格式
+const { body, validationResult } = require("express-validator");
+const userEditRules = [
+    body("name").not().isEmpty().withMessage("此欄位不可為空"),
+    body("mobile").custom(value => {
+        if(value.length > 0 && value !== "null") {
+            const regMobile = /^09\d{8}$/;
+            return regMobile.test(value);
+        } else {
+            return true;
+        }
+    }).withMessage("手機號碼格式不符"),
+    body("birthday").custom(value => {
+        if(value.length > 0) {
+            const today = Date.parse(moment().format("YYYY-MM-DD"));
+            const birthday = Date.parse(value);
+            return birthday <= today; 
+        } else {
+            return true;
+        }
+    }).withMessage("請選擇早於今天的日期"),
+];
 router.post("/edit", 
     uploader.single("image"),
+    userEditRules,
     async (req, res, next) => {
-        console.log("編輯會員資料", req.body)
+        console.log("編輯會員資料", req.body);
+        
+        const validateResult = validationResult(req);
+        if(!validateResult.isEmpty()) {
+            let error = validateResult.mapped();
+            console.log("會員編輯錯誤", error);
+            let errKeys = Object.keys(error);
+            let errObj={};
+            errKeys.forEach(key => errObj[key]=error[key].msg);
+            console.log(errObj);
+            return res.status(400).json(
+                errObj
+            );
+        };
         // 處理初始的 NULL string
         if(req.body.gender === "null") {
             req.body.gender = null;
-        } 
+        }; 
         if(req.body.mobile === "null") {
             req.body.mobile = null;
-        } 
+        }; 
         if(req.body.address === "null") {
             req.body.address = null;
-        }
+        };
 
         // 處理圖片
         console.log("req.file:", req.file);
