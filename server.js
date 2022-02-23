@@ -66,6 +66,33 @@ app.use("/api/auth", authRouter);
 let petRouter = require("./routers/pet");
 app.use("/api/pet", petRouter);
 
+//互助用router 測試中
+// let helpRouter = require("./routers/help");
+// app.use("/api/help", helpRouter);
+
+
+// 行事曆的日曆事件API
+app.get("/api/calendarE/:year/:month", async (req, res, next) => {
+    let [data, fields] = await connection.execute
+    ("SELECT  day(date) AS date, GROUP_CONCAT(DISTINCT category_id) AS category_id FROM Schedules WHERE year(date) = ? AND month(date)= ?  group by DATE(date) order by DATE(date);",
+    [req.params.year,req.params.month]);
+    data.map(d => {
+        d.category_id = d.category_id.split(",");
+    });
+    res.json(data);
+});
+
+// 行事曆記事事件API 正在改
+app.get("/api/calenderNote/:year/:month", async (req, res, next) => {
+    let [data, fields] = await connection.execute
+    ("SELECT pet_id AS pet_id, DAY(DATE) AS DATE, importance AS importance, tags AS tags, category_id AS category_id, title AS title, status AS status FROM Schedules WHERE year(date) = ? AND month(date)= ? ;",
+    [req.params.year,req.params.month]);
+    data.map(d => {
+        d.tags = d.tags.split(',');
+    });
+    res.json(data);
+});
+
 // 既然前面都比對不到, 那表示這裡是 404 (最後面)
 app.use((req, res, next) => {
     console.log("在所有路由中間件的後面 -> 404");
