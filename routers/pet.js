@@ -16,7 +16,7 @@ router.get("/", async (req, res, next) => {
 });
 
 // api/pet/:petId
-router.get("/:petId", async (req, res, next) => {
+router.get("/info/:petId", async (req, res, next) => {
     // 抓取最新一筆身高
     let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE created_at=(SELECT MAX(created_at) FROM pet_height WHERE pet_id=?)", [req.params.petId]);
     if(petHeight.length) {
@@ -40,6 +40,36 @@ router.get("/:petId", async (req, res, next) => {
         health: healthArr,
     });
 });
+
+// /api/pet/data/:selectedPet
+router.get("/data/:selectedPet", async (req, res, next) => {
+    // 先取得毛孩基資 (表: pets)
+    let [petInfo] = await connection.execute("SELECT * FROM pets WHERE id=?", [req.params.selectedPet]);
+    console.log("pet", petInfo);
+    petInfo = petInfo[0];
+    // 再取得毛孩健康狀態 (表: pet_illness)
+    let [petHealth] = await connection.execute("SELECT * FROM pet_illness WHERE pet_id=?", [req.params.selectedPet]);
+    const healthArr = petHealth.map(v => `${v.illness_category_id}`);
+    // 再取得毛孩身高 (表: pet_height)
+    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
+    let petHeightLabel = petHeight.map(date => date.created_at);
+    let petHeightData = petHeight.map(date => parseFloat(date.height));
+    console.log("pet height x y: ", petHeightLabel, petHeightData);
+    // 再取得毛孩體重 (表: pet_weight)
+    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
+    let petWeightLabel = petWeight.map(date => date.created_at);
+    let petWeightData = petWeight.map(date => parseFloat(date.weight));
+    console.log("pet weight x y: ", petWeightLabel, petWeightData);
+    
+    res.json({
+        data: petInfo,
+        health: healthArr,
+        heightLabel: petHeightLabel,
+        heightData: petHeightData,
+        weightLabel: petWeightLabel,
+        weightData: petWeightData,
+    });
+})
 
 // /api/pet/add
 const multer = require("multer");
