@@ -54,11 +54,17 @@ router.get("/data/:selectedPet", async (req, res, next) => {
     let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
     let petHeightLabel = petHeight.map(date => date.created_at);
     let petHeightData = petHeight.map(date => parseFloat(date.height));
+    // 陣列次序反轉 (改為舊到新)
+    petHeightLabel = petHeightLabel.reverse();
+    petHeightData = petHeightData.reverse();
     console.log("pet height x y: ", petHeightLabel, petHeightData);
     // 再取得毛孩體重 (表: pet_weight)
     let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
     let petWeightLabel = petWeight.map(date => date.created_at);
     let petWeightData = petWeight.map(date => parseFloat(date.weight));
+    // 陣列次序反轉 (改為舊到新)
+    petWeightLabel = petWeightLabel.reverse();
+    petWeightData = petWeightData.reverse();
     console.log("pet weight x y: ", petWeightLabel, petWeightData);
     
     res.json({
@@ -69,7 +75,38 @@ router.get("/data/:selectedPet", async (req, res, next) => {
         weightLabel: petWeightLabel,
         weightData: petWeightData,
     });
-})
+});
+
+// api/pet/height/:selectedPet
+router.get("/height/:selectedPet", async (req, res, next) => {
+    // 取得毛孩身高
+    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? ORDER BY created_at DESC", [req.params.selectedPet]);
+    // console.log("getAllHeight", petHeight);
+    petHeight = petHeight.map((data, i) => {
+        let rObj={};
+        rObj.id = data.id;
+        rObj.value = data.height;
+        rObj.time = data.created_at;
+        return rObj;
+    });
+    res.json({data: petHeight});
+});
+// api/pet/weight/:selectedPet
+router.get("/weight/:selectedPet", async (req, res, next) => {
+    // 取得毛孩體重
+    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? ORDER BY created_at DESC", [req.params.selectedPet]);
+    // console.log("getAllWeight", petWeight);
+    petWeight = petWeight.map((data, i) => {
+        let rObj={};
+        rObj.id = data.id;
+        rObj.value = data.weight;
+        rObj.time = data.created_at;
+        return rObj;
+    });
+    res.json({data: petWeight});
+
+});
+
 
 // /api/pet/add
 const multer = require("multer");
