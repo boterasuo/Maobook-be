@@ -1,6 +1,6 @@
 const express = require ("express");
 const router = express.Router();
-const connection = require("../utilis/db");
+const connection = require("../utils/db");
 const { checkLogin } = require("../middlewares/auth");
 const path = require("path");
 const moment = require("moment");
