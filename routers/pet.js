@@ -107,6 +107,63 @@ router.get("/weight/:selectedPet", async (req, res, next) => {
 
 });
 
+// /api/pet/editData
+router.post("/editData", async (req, res, next) => {
+    console.log(req.body);
+    const objLength = Object.keys(req.body).length;
+    if(objLength) {
+        let sql = "UPDATE ";
+        let saveData = [];
+        if(req.body.type === "height") {
+            sql += "pet_height SET ";
+            switch (objLength) {
+                case 4:
+                    sql += "height=?, created_at=? ";
+                    saveData.push(req.body.value, req.body.time);
+                break;
+                case 3:
+                    if(req.body.value) {
+                        sql += "height=? ";
+                        saveData.push(req.body.value);
+                    }else {
+                        sql += "created_at=? ";
+                        saveData.push(req.body.time);
+                    }
+            };
+            sql += "WHERE id=?";
+            saveData.push(req.body.id);
+
+        } else if(req.body.type === "weight") {
+            sql += "pet_weight SET ";
+            switch (objLength) {
+                case 4:
+                    sql += "weight=?, created_at=? ";
+                    saveData.push(req.body.value, req.body.time);
+                break;
+                case 3:
+                    if(req.body.value) {
+                        sql += "weight=? ";
+                        saveData.push(req.body.value);
+                    }else {
+                        sql += "created_at=? ";
+                        saveData.push(req.body.time);
+                    }
+            };
+            sql += "WHERE id=?";
+            saveData.push(req.body.id);
+        };
+        // 儲存到資料庫
+        let [result] = await connection.execute(sql, saveData);
+        console.log("editResult", result);
+        if (result) {
+            res.json({message: "ok"})
+        } else {
+            res.status(400).json({message: "錯誤"});
+        }
+    };
+    
+});
+
 
 // /api/pet/add
 const multer = require("multer");
