@@ -66,9 +66,9 @@ app.use("/api/auth", authRouter);
 let petRouter = require("./routers/pet");
 app.use("/api/pet", petRouter);
 
-//互助用router 測試中
-// let helpRouter = require("./routers/help");
-// app.use("/api/help", helpRouter);
+//互助用router
+let helpRouter = require("./routers/help");
+app.use("/api/help", helpRouter);
 
 
 // 行事曆的日曆事件API
