@@ -35,6 +35,8 @@ app.use(expressSession({
     saveUninitialized: false,
 }));
 
+// 靜態檔案
+app.use("/static", express.static(path.join(__dirname, "public")));
 
 // 初始時間
 app.use((req, res, next) => {
@@ -60,6 +62,9 @@ app.use("/api/member", memberRouter);
 // 註冊+登入+登出的 router
 let authRouter = require("./routers/auth");
 app.use("/api/auth", authRouter);
+// 寵物相關的 router
+let petRouter = require("./routers/pet");
+app.use("/api/pet", petRouter);
 
 //商店首頁router
 let storeRouter = require("./routers/store");
