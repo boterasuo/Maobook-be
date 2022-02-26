@@ -64,6 +64,9 @@ app.use("/api/auth", authRouter);
 //商店首頁router
 let storeRouter = require("./routers/store");
 app.use("/api/store", storeRouter);
+//互助用router
+let helpRouter = require("./routers/help");
+app.use("/api/help", helpRouter);
 
 let cartRouter = require("./routers/cart");
 app.use("/api/store", cartRouter);

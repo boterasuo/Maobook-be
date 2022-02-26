@@ -4,6 +4,8 @@ const connection = require("../utils/db");
 const { checkLogin } = require("../middlewares/auth");
 const path = require("path");
 const moment = require("moment");
+// npm i express-validator
+const { body, validationResult } = require("express-validator");
 
 // 確認是否為登入狀態
 router.use(checkLogin);
@@ -54,11 +56,17 @@ router.get("/data/:selectedPet", async (req, res, next) => {
     let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
     let petHeightLabel = petHeight.map(date => date.created_at);
     let petHeightData = petHeight.map(date => parseFloat(date.height));
+    // 陣列次序反轉 (改為舊到新)
+    petHeightLabel = petHeightLabel.reverse();
+    petHeightData = petHeightData.reverse();
     console.log("pet height x y: ", petHeightLabel, petHeightData);
     // 再取得毛孩體重 (表: pet_weight)
     let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
     let petWeightLabel = petWeight.map(date => date.created_at);
     let petWeightData = petWeight.map(date => parseFloat(date.weight));
+    // 陣列次序反轉 (改為舊到新)
+    petWeightLabel = petWeightLabel.reverse();
+    petWeightData = petWeightData.reverse();
     console.log("pet weight x y: ", petWeightLabel, petWeightData);
     
     res.json({
@@ -69,7 +77,233 @@ router.get("/data/:selectedPet", async (req, res, next) => {
         weightLabel: petWeightLabel,
         weightData: petWeightData,
     });
-})
+});
+
+// api/pet/height/:selectedPet
+router.get("/height/:selectedPet", async (req, res, next) => {
+    // 取得毛孩身高
+    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? ORDER BY created_at DESC", [req.params.selectedPet]);
+    // console.log("getAllHeight", petHeight);
+    petHeight = petHeight.map((data, i) => {
+        let rObj={};
+        rObj.id = data.id;
+        rObj.value = data.height;
+        rObj.time = data.created_at;
+        return rObj;
+    });
+    res.json({data: petHeight});
+});
+// api/pet/weight/:selectedPet
+router.get("/weight/:selectedPet", async (req, res, next) => {
+    // 取得毛孩體重
+    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? ORDER BY created_at DESC", [req.params.selectedPet]);
+    // console.log("getAllWeight", petWeight);
+    petWeight = petWeight.map((data, i) => {
+        let rObj={};
+        rObj.id = data.id;
+        rObj.value = data.weight;
+        rObj.time = data.created_at;
+        return rObj;
+    });
+    res.json({data: petWeight});
+
+});
+
+// /api/pet/editData
+const editDataRules = [
+    // 檢查 資料欄位是否符合格式
+    body("value").custom((value, {req}) => {
+        if(value && req.body.type === "height") {
+            return value <= 999.9 && value >= 1.0;
+        } else if(value && req.body.type === "weight") {
+            return value <= 99.9 && value >= 1.0;
+        }else  return true;
+    }).withMessage("身長需介於 1~999.9 cm/體重需介於 1~99.9 kg"),
+    body("time").custom(value => {
+        if(value) {
+            const today = Date.parse(moment().format("YYYY-MM-DD"));
+            const dataTime = Date.parse(value);
+            return dataTime <= today; 
+        }else return true;
+    }).withMessage("資料日期不可晚於今天日期"),
+];
+router.post("/editData", editDataRules, async (req, res, next) => {
+    console.log(req.body);
+    const validateResult = validationResult(req);
+    if (!validateResult.isEmpty()) {
+        let error = validateResult.mapped();
+        console.log("驗證錯誤訊息", error);
+        let errKeys = Object.keys(error);
+        console.log(errKeys);
+        let errObj={};
+        errKeys.forEach(key => errObj[key]=error[key].msg);
+        console.log(errObj);
+        return res.status(400).json(
+            errObj
+    )};
+    const objLength = Object.keys(req.body).length;
+    if(objLength > 2) {
+        // 若資料OK再存入資料庫
+        let sql = "UPDATE ";
+        let saveData = [];
+        if(req.body.type === "height") {
+            sql += "pet_height SET ";
+            if(req.body.value && req.body.time) {
+                sql += "height=?, created_at=? ";
+                saveData.push(req.body.value, req.body.time);
+            } else if(req.body.value) {
+                sql += "height=? ";
+                saveData.push(req.body.value);
+            } else {
+                sql += "created_at=? ";
+                saveData.push(req.body.time);
+            }
+            // switch (objLength) {
+            //     case 4:
+            //         sql += "height=?, created_at=? ";
+            //         saveData.push(req.body.value, req.body.time);
+            //     break;
+            //     case 3:
+            //         if(req.body.value) {
+            //             sql += "height=? ";
+            //             saveData.push(req.body.value);
+            //         }else {
+            //             sql += "created_at=? ";
+            //             saveData.push(req.body.time);
+            //         }
+            // };
+            sql += "WHERE id=?";
+            saveData.push(req.body.id);
+
+        } else if(req.body.type === "weight") {
+            sql += "pet_weight SET ";
+            if(req.body.value && req.body.time) {
+                sql += "weight=?, created_at=? ";
+                saveData.push(req.body.value, req.body.time);
+            } else if(req.body.value) {
+                sql += "weight=? ";
+                saveData.push(req.body.value);
+            } else {
+                sql += "created_at=? ";
+                saveData.push(req.body.time);
+            }
+            // switch (objLength) {
+            //     case 4:
+            //         sql += "weight=?, created_at=? ";
+            //         saveData.push(req.body.value, req.body.time);
+            //     break;
+            //     case 3:
+            //         if(req.body.value) {
+            //             sql += "weight=? ";
+            //             saveData.push(req.body.value);
+            //         }else {
+            //             sql += "created_at=? ";
+            //             saveData.push(req.body.time);
+            //         }
+            // };
+            sql += "WHERE id=?";
+            saveData.push(req.body.id);
+        };
+        
+        // 檢查資料日期是否已存在
+        let dateSql = "SELECT created_at FROM ";
+        if(req.body.type === "height") {
+            dateSql += "pet_height ";
+        } else if(req.body.type === "weight") {
+            dateSql += "pet_weight ";
+        };
+        dateSql += "WHERE pet_id=? AND created_at=?";
+        let [dateCheck] = await connection.execute(dateSql, 
+            [req.body.petId, req.body.time]);
+        // console.log(dateCheck);
+        if(dateCheck.length > 0) {
+            // 有查到該筆日期資料 = 日期重複
+            return res.status(400).json({time: "該日期已有資料存在"});
+        }
+        // 儲存到資料庫
+        let [result] = await connection.execute(sql, saveData);
+        console.log("editResult", result);
+        if (result) {
+            res.json({message: "ok"})
+        } else {
+            res.status(400).json({message: "錯誤"});
+        }
+    } else {
+        return res.json({message: "no data input"});
+    };
+    
+});
+
+// /api/pet/addData
+const addDataRules = [
+    // 檢查 資料欄位是否符合格式
+    body("value").not().isEmpty().withMessage("此欄位不可為空"),
+    body("value").custom((value, {req}) => {
+        if(req.body.type === "height") {
+            return value <= 999.9 && value >= 1.0;
+        } else if(req.body.type === "weight") {
+            return value <= 99.9 && value >= 1.0;
+        }
+    }).withMessage("身長需介於 1~999.9 cm/體重需介於 1~99.9 kg"),
+    body("time").not().isEmpty().withMessage("此欄位不可為空"),
+    body("time").custom(value => {
+        const today = Date.parse(moment().format("YYYY-MM-DD"));
+        const dataTime = Date.parse(value);
+        return dataTime <= today;  
+    }).withMessage("資料日期不可晚於今天日期"),
+];
+
+router.post("/addData", addDataRules, async (req, res, next) => {
+    console.log(req.body);
+    const validateResult = validationResult(req);
+        if (!validateResult.isEmpty()) {
+            // validateResult 不是空的
+            let error = validateResult.mapped();
+            console.log("驗證錯誤訊息", error);
+            let errKeys = Object.keys(error);
+            console.log(errKeys);
+            let errObj={};
+            errKeys.forEach(key => errObj[key]=error[key].msg);
+            console.log(errObj);
+            return res.status(400).json(
+                errObj
+        )};
+    // 檢查資料日期是否已存在
+    let dateSql = "SELECT created_at FROM ";
+    if(req.body.type === "height") {
+        dateSql += "pet_height ";
+    } else if(req.body.type === "weight") {
+        dateSql += "pet_weight ";
+    };
+    dateSql += "WHERE pet_id=? AND created_at=?";
+    let [dateCheck] = await connection.execute(dateSql, 
+        [req.body.petId, req.body.time]);
+    // console.log(dateCheck);
+    if(dateCheck.length > 0) {
+        // 有查到該筆日期資料 = 日期重複
+        return res.status(400).json({time: "該日期已有資料存在"});
+    }
+
+    // 存入資料庫
+    let sql = "INSERT INTO ";
+    let saveData = [];
+    if(req.body.type === "height") {
+        sql += "pet_height (height, ";
+        saveData.push(req.body.value);
+    } else if(req.body.type === "weight") {
+        sql += "pet_weight (weight, ";
+        saveData.push(req.body.value);
+    }
+    sql += "pet_id, created_at) VALUES (?, ?, ?)";
+    saveData.push(req.body.petId, req.body.time);
+    let [addDataResult] = await connection.execute(sql, saveData);
+    if (addDataResult) {
+        res.json({message: "ok"})
+    } else {
+        res.status(400).json({message: "錯誤"});
+    };    
+});
+
 
 // /api/pet/add
 const multer = require("multer");
@@ -107,7 +341,7 @@ const uploader = multer({
     }
 });
 
-const { body, validationResult } = require("express-validator");
+// const { body, validationResult } = require("express-validator");
 const addPetRules = [
     // 檢查寵物姓名欄位 到家日 生日
     body("name").not().isEmpty().withMessage("此欄位不可為空"),
