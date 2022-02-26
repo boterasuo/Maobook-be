@@ -35,13 +35,11 @@ app.use(expressSession({
     saveUninitialized: false,
 }));
 
-// 靜態檔案
-app.use("/static", express.static(path.join(__dirname, "public")));
 
 // 初始時間
 app.use((req, res, next) => {
     let current = new Date();
-    console.log(`有人來拜訪嚕 at ${current.toISOString()}`);
+    console.log(`有人來拜訪嚕! at ${current.toISOString()}`);
     next(); // 若沒寫 next 網頁會 pending (擱置)
 });
 
@@ -62,36 +60,20 @@ app.use("/api/member", memberRouter);
 // 註冊+登入+登出的 router
 let authRouter = require("./routers/auth");
 app.use("/api/auth", authRouter);
-// 寵物相關的 router
-let petRouter = require("./routers/pet");
-app.use("/api/pet", petRouter);
 
+//商店首頁router
+let storeRouter = require("./routers/store");
+app.use("/api/store", storeRouter);
 //互助用router
 let helpRouter = require("./routers/help");
 app.use("/api/help", helpRouter);
 
+let cartRouter = require("./routers/cart");
+app.use("/api/store", cartRouter);
 
-// 行事曆的日曆事件API
-app.get("/api/calendarE/:year/:month", async (req, res, next) => {
-    let [data, fields] = await connection.execute
-    ("SELECT  day(date) AS date, GROUP_CONCAT(DISTINCT category_id) AS category_id FROM Schedules WHERE year(date) = ? AND month(date)= ?  group by DATE(date) order by DATE(date);",
-    [req.params.year,req.params.month]);
-    data.map(d => {
-        d.category_id = d.category_id.split(",");
-    });
-    res.json(data);
-});
+let orderRouter = require("./routers/order");
+app.use("/api/store", orderRouter);
 
-// 行事曆記事事件API 正在改
-app.get("/api/calenderNote/:year/:month", async (req, res, next) => {
-    let [data, fields] = await connection.execute
-    ("SELECT pet_id AS pet_id, DAY(DATE) AS DATE, importance AS importance, tags AS tags, category_id AS category_id, title AS title, status AS status FROM Schedules WHERE year(date) = ? AND month(date)= ? ;",
-    [req.params.year,req.params.month]);
-    data.map(d => {
-        d.tags = d.tags.split(',');
-    });
-    res.json(data);
-});
 
 // 既然前面都比對不到, 那表示這裡是 404 (最後面)
 app.use((req, res, next) => {

@@ -10,7 +10,7 @@ const moment = require("moment");
 router.use(checkLogin);
 
 router.get("/", (req, res, next) => {
-    console.log("member API ", req.session.member);
+    // console.log("member API ", req.session.member);
     res.json(req.session.member);
 });
 
@@ -38,10 +38,10 @@ router.get("/info", async (req, res, next) => {
 const multer = require("multer");
 // 圖片存的位置
 const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, path.join(__dirname, "..","public", "uploads"));
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, "..", "public", "uploads"));
     },
-    filename: function(req, file, cb) {
+    filename: function (req, file, cb) {
         console.log("multer-filename", file);
         const ext = file.originalname.split(".").pop();
         // TODO: 有時間的話檔名改用 uuid
@@ -52,12 +52,12 @@ const storage = multer.diskStorage({
 const uploader = multer({
     storage: storage,
     // 過濾圖片
-    fileFilter: function(req, file, cb) {
+    fileFilter: function (req, file, cb) {
         console.log("file.mimetype", file.mimetype);
-        if(
+        if (
             file.mimetype !== "image/jpeg" &&
             file.mimetype !== "image/jpg" &&
-            file.mimetype !== "image/png" 
+            file.mimetype !== "image/png"
         ) {
             cb(new Error("不接受的檔案型態"), false);
         } else {
@@ -76,7 +76,7 @@ const { body, validationResult } = require("express-validator");
 const userEditRules = [
     body("name").not().isEmpty().withMessage("此欄位不可為空"),
     body("mobile").custom(value => {
-        if(value.length > 0 && value !== "null") {
+        if (value.length > 0 && value !== "null") {
             const regMobile = /^09\d{8}$/;
             return regMobile.test(value);
         } else {
@@ -87,38 +87,38 @@ const userEditRules = [
         if(value.length > 0 && value !== "null") {
             const today = Date.parse(moment().format("YYYY-MM-DD"));
             const birthday = Date.parse(value);
-            return birthday <= today; 
+            return birthday <= today;
         } else {
             return true;
         }
     }).withMessage("請選擇早於今天的日期"),
 ];
-router.post("/edit", 
+router.post("/edit",
     uploader.single("image"),
     userEditRules,
     async (req, res, next) => {
         console.log("編輯會員資料", req.body);
-        
+
         const validateResult = validationResult(req);
-        if(!validateResult.isEmpty()) {
+        if (!validateResult.isEmpty()) {
             let error = validateResult.mapped();
             console.log("會員編輯錯誤", error);
             let errKeys = Object.keys(error);
-            let errObj={};
-            errKeys.forEach(key => errObj[key]=error[key].msg);
+            let errObj = {};
+            errKeys.forEach(key => errObj[key] = error[key].msg);
             console.log(errObj);
             return res.status(400).json(
                 errObj
             );
         };
         // 處理初始的 NULL string
-        if(req.body.gender === "null") {
+        if (req.body.gender === "null") {
             req.body.gender = null;
-        }; 
-        if(req.body.mobile === "null") {
+        };
+        if (req.body.mobile === "null") {
             req.body.mobile = null;
-        }; 
-        if(req.body.address === "null") {
+        };
+        if (req.body.address === "null") {
             req.body.address = null;
         };
 
@@ -127,7 +127,7 @@ router.post("/edit",
         let sql = "UPDATE users SET name=?, gender=?, mobile=?, birthday=?, living_address=?";
         let saveData = [req.body.name, req.body.gender, req.body.mobile, req.body.birthday, req.body.address];
         // 判斷是否有上傳圖檔 (更新大頭貼)
-        if(req.file) {
+        if (req.file) {
             // 有上傳圖檔再寫入資料庫
             let filename = req.file ? "/static/uploads/" + req.file.filename : "";
             // console.log("filename:", filename);
@@ -138,15 +138,15 @@ router.post("/edit",
             req.session.member.image = filename;
         } 
         sql += " WHERE id=?";
-        saveData.push(req.body.id); 
+        saveData.push(req.body.id);
         let [result] = await connection.execute(sql, saveData);
         console.log("編輯會員result", result);
         if (result) {
-            res.json({message: "ok"})
+            res.json({ message: "ok" })
         } else {
-            res.status(400).json({message: "錯誤"});
+            res.status(400).json({ message: "錯誤" });
         }
-});
+    });
 
 
 

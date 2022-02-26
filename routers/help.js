@@ -5,20 +5,25 @@ const { checkLogin } = require("../middlewares/auth");
 const path = require("path");
 const moment = require("moment");
 
-//行事曆 測試中
-router.get("/helpcalendar", async (req, res) => {
+//行事曆
+router.get("/helpcalendar/:year/:month", async (req, res) => {
     let [data, fields] = await connection.execute
 // 抓出有案件的日期：行事曆中該年月下的日期
     ("SELECT day(date) AS day FROM case_give WHERE year(date) = ? AND month(date)= ?",
 [req.params.year,req.params.month]);
     res.json(data);
-  });
+});
 
 //該日案件列表（行事曆點開）
 router.get("/dayhelps", async (req, res) => {
   let [data, fields] = await connection.execute(
 // 抓出該日的所有案件及細節 再JOIN case_take抓應徵人數
-    `SELECT case_give.*, case_take.user_id_taker FROM case_give WHERE status=0 AND day(date)= ${req.params.date} JOIN case_take ON case_give.id = case_take.case_id `);
+    `SELECT g.*, case_take.user_id_taker, day(date)
+    FROM case_give AS g
+    JOIN case_take ON g.id = case_take.case_id
+    WHERE g.status=0 AND day(date)= 1;`);
+    
+    // `SELECT case_give.*, case_take.user_id_taker FROM case_give WHERE status=0 AND day(date)= ${req.params.date} JOIN case_take ON case_give.id = case_take.case_id `
   res.json(data);
 });
 
@@ -60,7 +65,7 @@ router.post("/helpdetails", async (req, res) => {
 router.put("/helpdetails", async (req, res) => {
   let [data, fields] = await connection.execute(
 //修改案件內容
-    `UPDATE case_give SET title=? date=? price=? region=? content=? category=? tags=? img=? WHERE id = ${req.params.id}`, [req.params.title,req.params.date, req.params.price, req.params.region, req.params.content, req.params.category, req.params.tags, req.params.img]);
+    `UPDATE case_give SET title=?, date=?, price=?, region=?, content=?, category=?, tags=?, img=? WHERE id = ${req.params.id}`, [req.params.title,req.params.date, req.params.price, req.params.region, req.params.content, req.params.category, req.params.tags, req.params.img]);
   res.json(data);
 });
 
