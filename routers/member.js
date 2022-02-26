@@ -84,7 +84,7 @@ const userEditRules = [
         }
     }).withMessage("手機號碼格式不符"),
     body("birthday").custom(value => {
-        if(value.length > 0) {
+        if(value.length > 0 && value !== "null") {
             const today = Date.parse(moment().format("YYYY-MM-DD"));
             const birthday = Date.parse(value);
             return birthday <= today; 
@@ -133,11 +133,14 @@ router.post("/edit",
             // console.log("filename:", filename);
             sql += ", image=? ";
             saveData.push(filename);
+            // 將圖檔名同步存到 session 裡
+            // 不然在未重新登入狀態下, 頁面重整時會抓到舊圖檔
+            req.session.member.image = filename;
         } 
         sql += " WHERE id=?";
         saveData.push(req.body.id); 
         let [result] = await connection.execute(sql, saveData);
-        console.log(result);
+        console.log("編輯會員result", result);
         if (result) {
             res.json({message: "ok"})
         } else {
