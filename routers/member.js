@@ -111,14 +111,17 @@ router.post("/edit",
                 errObj
             );
         };
-        // 處理初始的 NULL string
-        if (req.body.gender === "null") {
+        // 處理初始的 NULL string 或 空值
+        if (req.body.gender === "null" || req.body.gender === "") {
             req.body.gender = null;
         };
-        if (req.body.mobile === "null") {
+        if (req.body.birthday === "null" || req.body.birthday === "") {
+            req.body.birthday = null;
+        };
+        if (req.body.mobile === "null" || req.body.mobile === "") {
             req.body.mobile = null;
         };
-        if (req.body.address === "null") {
+        if (req.body.address === "null" || req.body.address === "") {
             req.body.address = null;
         };
 
