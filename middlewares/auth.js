@@ -7,7 +7,7 @@ let checkLogin = function (req, res, next) {
         next();
     } else {
         // 表示尚未登入過
-        res.status(400).json({
+        res.status(401).json({
             code: "9999",
             msg: "尚未登入",
         })
