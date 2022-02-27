@@ -70,6 +70,10 @@ app.use("/api/pet", petRouter);
 let helpRouter = require("./routers/help");
 app.use("/api/help", helpRouter);
 
+//社群用router
+let comRouter = require("./routers/community");
+app.use("/api/community", comRouter);
+
 
 // 行事曆的日曆事件API
 app.get("/api/calendarE/:year/:month", async (req, res, next) => {
