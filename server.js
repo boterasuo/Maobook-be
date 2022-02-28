@@ -43,10 +43,17 @@ app.use('/static', express.static(path.join(__dirname, 'public')))
 
 // 初始時間
 app.use((req, res, next) => {
+<<<<<<< HEAD
   let current = new Date()
   console.log(`有人來拜訪嚕 at ${current.toISOString()}`)
   next() // 若沒寫 next 網頁會 pending (擱置)
 })
+=======
+    let current = new Date();
+    console.log(`有人來拜訪嚕! at ${current.toISOString()}`);
+    next(); // 若沒寫 next 網頁會 pending (擱置)
+});
+>>>>>>> bc76a3c71d9e262ebcbff73cbc380449e04de649
 
 // 測試用首頁
 app.get('/', (req, res, next) => {
@@ -59,6 +66,7 @@ app.use((req, res, next) => {
   next()
 })
 
+<<<<<<< HEAD
 // 行事曆的日曆事件API
 // app.get("/api/calendarE/:year/:month", async (req, res, next) => {
 //     let [data, fields] = await connection.execute
@@ -102,6 +110,21 @@ app.use('/api/calenderPost', schedualPostRouter)
 // 行事曆的撰寫送表單 router
 let schedualFormRouter = require('./routers/calenderForm')
 app.use('/api/calenderForm', schedualFormRouter)
+=======
+//商店首頁router
+let storeRouter = require("./routers/store");
+app.use("/api/store", storeRouter);
+//互助用router
+let helpRouter = require("./routers/help");
+app.use("/api/help", helpRouter);
+
+let cartRouter = require("./routers/cart");
+app.use("/api/store", cartRouter);
+
+let orderRouter = require("./routers/order");
+app.use("/api/store", orderRouter);
+
+>>>>>>> bc76a3c71d9e262ebcbff73cbc380449e04de649
 
 // 既然前面都比對不到, 那表示這裡是 404 (最後面)
 app.use((req, res, next) => {
