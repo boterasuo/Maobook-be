@@ -24,13 +24,13 @@ router.get("/info/:petId", async (req, res, next) => {
     // 抓取毛孩基資
     let [petInfo] = await connection.execute("SELECT * FROM pets WHERE id=?", [petId]);
     // 抓取最新一筆身高
-    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? AND created_at=(SELECT MAX(created_at) FROM pet_height)", [petId]);
+    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? AND created_at=(SELECT MAX(created_at) FROM pet_height WHERE pet_id=?)", [petId, petId]);
     if(petHeight.length) {
         petHeight = petHeight[0].height;
     }else petHeight="";
     console.log("petInfo_height", petHeight);
     // 抓取最新一筆體重
-    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? AND created_at=(SELECT MAX(created_at) FROM pet_weight)", [petId]);
+    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? AND created_at=(SELECT MAX(created_at) FROM pet_weight WHERE pet_id=?)", [petId, petId]);
     if(petWeight.length) {
         petWeight = petWeight[0].weight;
     } else petWeight="";
