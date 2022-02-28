@@ -139,7 +139,12 @@ router.post("/edit",
             // 將圖檔名同步存到 session 裡
             // 不然在未重新登入狀態下, 頁面重整時會抓到舊圖檔
             req.session.member.image = filename;
-        } 
+        } else if (req.body.image === "") {
+            // console.log("no pictures!")
+            let filename = null;
+            sql += ", image=? ";
+            saveData.push(filename);
+        }
         sql += " WHERE id=?";
         saveData.push(req.body.id);
         let [result] = await connection.execute(sql, saveData);

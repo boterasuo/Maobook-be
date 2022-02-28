@@ -283,6 +283,27 @@ router.post("/addData", addDataRules, async (req, res, next) => {
     };    
 });
 
+// /api/pet/deleteData/:type
+router.post("/deleteData/:type", async (req, res, next) => {
+    const type = req.params.type;
+    const deleteId = req.body.btnId;
+    console.log(type, deleteId)
+    let sql = "DELETE FROM ";
+    if(type === "height") {
+        sql += "pet_height "
+    } else {
+        sql += "pet_weight "
+    }
+    sql += "WHERE id=?"
+    // 刪除該筆資料
+    let [deleteResult] = await connection.execute(sql, [deleteId]);
+    if (deleteResult) {
+        res.json({message: "ok"})
+    } else {
+        res.status(400).json({message: "錯誤"});
+    }; 
+})
+
 // 處理圖片和資料驗證們
 const multer = require("multer");
 // 圖片存的位置
