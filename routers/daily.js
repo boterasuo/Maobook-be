@@ -26,7 +26,6 @@ router.get("/card", async (req, res, next) => {
     LEFT JOIN diary_tags ON diary_tags.diary_id = social_diary.id
     LEFT JOIN tag_name ON diary_tags.tag_id = tag_name.id
     GROUP BY diary_id
-    LIMIT 4
     `
   );
   res.json(data);
@@ -38,7 +37,7 @@ router.get("/card-list", async (req, res, next) => {
   let [data, field] = await connection.execute(
     `
     SELECT 
-    Card.id, Card.image, Card.title, Card.content,Card.created_at,
+    Card.id, Card.image, Card.tittle, Card.content,Card.created_at,
     users.name as poster, users.image AS avatar,
    Card.likes, Card.comments,
    GROUP_CONCAT(tag_name.name SEPARATOR ',') as tags
@@ -83,32 +82,22 @@ WHERE likes.diary_id = ?`,[req.params.likeDiaryID]);
 });
 
 // 對應的留言列表 (貼文 x 留言內容) 
-  router.get("/comment-list/:commentDiaryID", async (req, res) => {
+  router.get("/comment-list", async (req, res) => {
     let [data, fields] = await connection.execute(
-  ` SELECT comments.id, comments.diary_id, users.name, comments.comment, comments.created_at
+  ` SELECT comments.id, comments.diary_id, users.name, users.image AS commenter, comments.comment, comments.created_at
   FROM diary_comments AS comments
   JOIN users on comments.user_id = users.id 
-  WHERE comments.diary_id = ?`,[req.params.commentDiaryID]);
+  ORDER BY created_at`);
     res.json(data);
   });
 
-
-// TODO: 新增貼文 ->檢查標籤/分類是否已存在
-router.post("/add", async (req, res, next) => {
-  let [data, field] = await connection.execute(
-    "SELECT * FROM diary_like JOIN social_dairy ON diary_like.diary_id = social_diary.id"
-  );
-  // console.log("returnUserInfo: ", returnUserInfo);
-  res.json(data);
-});
-
-//TODO: 修改貼文內容
-router.put("/Edit", async (req, res) => {
-  let [data, fields] = await connection.execute(
-    `UPDATE case_give SET title=?, date=?, price=?, region=?, content=?, category=?, tags=?, img=? WHERE id = ${req.params.id}`, [req.params.title,req.params.date, req.params.price, req.params.region, req.params.content, req.params.category, req.params.tags, req.params.img]);
-  res.json(data);
-});
-
-//TODO: 刪除貼文內容
+  // 送出貼文留言API
+  router.post('/AddComment', async (req, res, next) => {
+   
+    let [data, fields] = await connection.execute(
+      `INSERT INTO diary_comments (id, diary_id, user_id, comment, created_at	) VALUES ('','${req.params.diary_id}', '${req.params.user_id}', ${req.params.comment}, ${GETDATE()})`);
+      res.json(data);
+   
+    });
 
 module.exports = router;

@@ -13,7 +13,7 @@ let app = express()
 app.use(
   cors({
     // 為了要讓 browser 在 CORS 的情況下還是幫我們送 cookie
-    origin: ['http://localhost:3001'],
+    origin: ['http://localhost:3000'],
     credentials: true,
   })
 )
