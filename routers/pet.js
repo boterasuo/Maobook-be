@@ -12,12 +12,35 @@ router.use(checkLogin);
 
 // /api/pet
 router.get("/", async (req, res, next) => {
-    let [petList] = await connection.execute("SELECT id, user_id, name, image FROM pets WHERE user_id=?", [req.session.member.id]);
+    let sql = "SELECT id, user_id, name, image FROM pets WHERE user_id=?";
+    let saveData = [req.session.member.id];
+    let pagination = {};
+    if (req.query.page) {
+        let page = req.query.page;
+        console.log("page", page)
+        let [total] = await connection.execute("SELECT COUNT(*) AS total FROM pets WHERE user_id=?", [req.session.member.id]);
+        total = total[0].total;
+        const perPage = 9;
+        const lastPage = Math.ceil(total / perPage);
+        let pageOffset = (page - 1) * perPage;
+        sql += " ORDER BY id LIMIT ? OFFSET ?";
+        saveData.push(perPage, pageOffset);
+        pagination = {total, perPage, page, lastPage};
+    }
+
+    let [petList] = await connection.execute(sql, saveData);
     console.log("petList", petList);
-    res.json({data:petList});
+    if (Object.keys(pagination).length) {
+        res.json({
+            pagination,
+            data:petList,
+        })
+    } else {
+        res.json({data:petList});
+    }
 });
 
-// api/pet/:petId
+// api/pet/info/:petId
 router.get("/info/:petId", async (req, res, next) => {
     const petId = req.params.petId;
     console.log("petInfo_id", petId)
