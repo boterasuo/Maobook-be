@@ -12,30 +12,37 @@ router.use(checkLogin);
 
 // /api/pet
 router.get("/", async (req, res, next) => {
-    let [petList] = await connection.execute("SELECT * FROM pets WHERE user_id=?", [req.session.member.id]);
-    // console.log(petList);
+    let [petList] = await connection.execute("SELECT id, user_id, name, image FROM pets WHERE user_id=?", [req.session.member.id]);
+    console.log("petList", petList);
     res.json({data:petList});
 });
 
 // api/pet/:petId
 router.get("/info/:petId", async (req, res, next) => {
+    const petId = req.params.petId;
+    console.log("petInfo_id", petId)
+    // 抓取毛孩基資
+    let [petInfo] = await connection.execute("SELECT * FROM pets WHERE id=?", [petId]);
     // 抓取最新一筆身高
-    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE created_at=(SELECT MAX(created_at) FROM pet_height WHERE pet_id=?)", [req.params.petId]);
+    let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? AND created_at=(SELECT MAX(created_at) FROM pet_height WHERE pet_id=?)", [petId, petId]);
     if(petHeight.length) {
         petHeight = petHeight[0].height;
     }else petHeight="";
+    console.log("petInfo_height", petHeight);
     // 抓取最新一筆體重
-    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE created_at=(SELECT MAX(created_at) FROM pet_weight WHERE pet_id=?)", [req.params.petId]);
+    let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? AND created_at=(SELECT MAX(created_at) FROM pet_weight WHERE pet_id=?)", [petId, petId]);
     if(petWeight.length) {
         petWeight = petWeight[0].weight;
     } else petWeight="";
+    console.log("petInfo_weight", petWeight);
     // 抓取疫苗資訊
-    let [petVaccine] = await connection.execute("SELECT * FROM vaccination WHERE pet_id=?", [req.params.petId]);
+    let [petVaccine] = await connection.execute("SELECT * FROM vaccination WHERE pet_id=?", [petId]);
     const vaccineArr = petVaccine.map(v => `${v.vaccine_category_id}`);
     // 抓取健康狀態資訊
-    let [petHealth] = await connection.execute("SELECT * FROM pet_illness WHERE pet_id=?", [req.params.petId]);
+    let [petHealth] = await connection.execute("SELECT * FROM pet_illness WHERE pet_id=?", [petId]);
     const healthArr = petHealth.map(v => `${v.illness_category_id}`);
     res.json({
+        petInfo: petInfo[0],
         height: petHeight,
         weight: petWeight,
         vaccine: vaccineArr, 
@@ -56,7 +63,7 @@ router.get("/data/:selectedPet", async (req, res, next) => {
     let [petHeight] = await connection.execute("SELECT * FROM pet_height WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
     let petHeightLabel = petHeight.map(date => date.created_at);
     let petHeightData = petHeight.map(date => parseFloat(date.height));
-    // 陣列次序反轉 (改為舊到新)
+    // 陣列次序反轉 (改為舊到新 for chart)
     petHeightLabel = petHeightLabel.reverse();
     petHeightData = petHeightData.reverse();
     console.log("pet height x y: ", petHeightLabel, petHeightData);
@@ -64,7 +71,7 @@ router.get("/data/:selectedPet", async (req, res, next) => {
     let [petWeight] = await connection.execute("SELECT * FROM pet_weight WHERE pet_id=? ORDER BY created_at DESC LIMIT 10", [req.params.selectedPet]);
     let petWeightLabel = petWeight.map(date => date.created_at);
     let petWeightData = petWeight.map(date => parseFloat(date.weight));
-    // 陣列次序反轉 (改為舊到新)
+    // 陣列次序反轉 (改為舊到新 for chart)
     petWeightLabel = petWeightLabel.reverse();
     petWeightData = petWeightData.reverse();
     console.log("pet weight x y: ", petWeightLabel, petWeightData);
@@ -276,6 +283,27 @@ router.post("/addData", addDataRules, async (req, res, next) => {
     };    
 });
 
+// /api/pet/deleteData/:type
+router.post("/deleteData/:type", async (req, res, next) => {
+    const type = req.params.type;
+    const deleteId = req.body.btnId;
+    console.log(type, deleteId)
+    let sql = "DELETE FROM ";
+    if(type === "height") {
+        sql += "pet_height "
+    } else {
+        sql += "pet_weight "
+    }
+    sql += "WHERE id=?"
+    // 刪除該筆資料
+    let [deleteResult] = await connection.execute(sql, [deleteId]);
+    if (deleteResult) {
+        res.json({message: "ok"})
+    } else {
+        res.status(400).json({message: "錯誤"});
+    }; 
+})
+
 // 處理圖片和資料驗證們
 const multer = require("multer");
 // 圖片存的位置
@@ -338,6 +366,7 @@ const addPetRules = [
         }
     }).withMessage("毛孩生日不可晚於到家日或今天日期"),
     body("cate").not().isEmpty().withMessage("此欄位不可為空"),
+    body("gender").not().isEmpty().withMessage("此欄位不可為空"),
 ];
 
 // /api/pet/editInfo
@@ -360,7 +389,7 @@ router.post("/editInfo",
             );
         };
         // 根據生日判斷 age category
-        let ageCate = ""; 
+        let ageCate = req.body.ageCate; 
         if(req.body.birthday.length > 0) {
             const today = moment(moment().format("YYYY-MM-DD"));
             const birthday = moment(req.body.birthday);
@@ -373,18 +402,78 @@ router.post("/editInfo",
                 ageCate = 3;
             };
             // console.log("ageCate", ageCate);
-        };
+        } else {
+            ageCate = 0;
+        }
         // 判斷是否有上傳圖檔 (新增毛孩照片)
         let filename;
         if(req.file) {
             // 有上傳圖檔再寫入資料庫
             filename = req.file ? "/static/uploads/" + req.file.filename : "";            
         } else {
-            filename = "";
+            filename = req.body.image;
         }
         // console.log("filename", filename);
         let [editResult] = await connection.execute(
-            "UPDATE pets name=?, image=?, adoptime=?, birthday=?, gender=?, category=? WHERE id=?", [req.body.name, filename, req.body.arrDay, req.body.birthday, req.body.gender, req.body.cate, req.body.id]);
+            "UPDATE pets SET name=?, image=?, adoptime=?, birthday=?, age_category=?, gender=?, category=? WHERE id=?", [req.body.name, filename, req.body.arrDay, req.body.birthday, ageCate, req.body.gender, req.body.cate, req.body.id]);
+        // console.log("editResult", editResult);
+        // 比對 vaccination --> 若內容不同則先全刪再全存
+        let [vaccineData] = await connection.execute(
+            "SELECT vaccine_category_id FROM vaccination WHERE pet_id=?", [req.body.id]);
+            vaccineData = vaccineData.map(v => v.vaccine_category_id).toString();
+        // 內容不同代表有修改 --> 更新到資料庫中
+        let petVaccResult = [];
+        if (req.body.vaccine !== vaccineData) {
+            // console.log("something changed!");
+            let [vaccineDelete] = await connection.execute(
+                "DELETE FROM vaccination WHERE pet_id=?",[req.body.id]);
+            let vaccineArr = req.body.vaccine.split(",");
+            let sql = "INSERT INTO vaccination (pet_id, vaccine_category_id) VALUES ";
+            let saveData = [];
+            for (let i=0; i<vaccineArr.length; i++) {
+                if (i === 0) {
+                    sql += "(?, ?)";
+                    saveData.push(req.body.id, vaccineArr[i]);
+                } else {
+                    sql += ", (?, ?)";
+                    saveData.push(req.body.id, vaccineArr[i]);
+                }
+            };
+            petVaccResult = await connection.execute(sql, saveData);
+        } else { petVaccResult = "疫苗資料無修改"};
+        // console.log("petVaccResult", petVaccResult);
+
+        // 比對 illness --> 若內容不同則先全刪再全存
+        let [healthData] = await connection.execute(
+            "SELECT illness_category_id FROM pet_illness WHERE pet_id=?", [req.body.id]);
+            healthData = healthData.map(v => v.illness_category_id).toString();
+        // 內容不同代表有修改 --> 更新到資料庫中
+        let petHealthResult = [];
+        if (req.body.health !== healthData) {
+            let [healthDelete] = await connection.execute(
+                "DELETE FROM pet_illness WHERE pet_id=?",[req.body.id]);
+            let healthArr = req.body.health.split(",");
+            let sql = "INSERT INTO pet_illness (pet_id, illness_category_id) VALUES ";
+            let saveData = [];
+            for (let i=0; i<healthArr.length; i++) {
+                if (i === 0) {
+                    sql += "(?, ?)";
+                    saveData.push(req.body.id, healthArr[i]);
+                } else {
+                    sql += ", (?, ?)";
+                    saveData.push(req.body.id, healthArr[i]);
+                }
+            };
+            petHealthResult = await connection.execute(sql, saveData);
+        } else {petHealthResult = "健康資料無修改"};
+        // console.log("petHealthResult", petHealthResult);
+        if (editResult && 
+            petVaccResult.length && 
+            petHealthResult.length) {
+            res.json({message: "ok"});
+        } else {
+            res.status(400).json({message: "錯誤"});
+        };
     }
 );
 
@@ -407,9 +496,9 @@ router.post("/add",
                 errObj
             );
         };
-        // 存入資料庫
         const addPetTime = moment().format("YYYY-MM-DD kk:mm:ss");
-        let ageCate = ""; // 根據生日判斷 age category
+        // 判斷年齡類別
+        let ageCate = 0; // 根據生日判斷 age category
         if(req.body.birthday.length > 0) {
             const today = moment(moment().format("YYYY-MM-DD"));
             const birthday = moment(req.body.birthday);
@@ -437,42 +526,61 @@ router.post("/add",
         let saveData = [req.body.id, req.body.cate, req.body.name, req.body.gender, filename, req.body.birthday, ageCate, req.body.arrDay, 1, addPetTime];
         // 先存入 pets
         let [addPetResult] = await connection.execute(sql, saveData);
-        console.log("addPetResult", addPetResult);
-        // 利用 user_id 和 created_at 取得剛建立的寵物 id
-        // TODO: 改用 addPetResult 內提供的 InsertId 即可!!
-        let [getPetId] = await connection.execute("SELECT id FROM pets WHERE user_id=? AND created_at=?", [req.body.id, addPetTime]);
-        const petId = getPetId[0].id;
+        // console.log("addPetResult:", addPetResult);
+        const newPetId = addPetResult.insertId;
+        // 改用 addPetResult 內提供的 InsertId 即可!!
         // 將身高 體重 疫苗 健康資訊 存入對應的 TABLE
         // pet_height, pet_weight, vaccination, pet_illness
         // pet_height
         let petHeightResult = [];
         if (req.body.height.length) {
-            petHeightResult = await connection.execute("INSERT INTO pet_height (pet_id, height, created_at) VALUES (?, ?, ?)", [petId, req.body.height, addPetTime]);
-        };
+            petHeightResult = await connection.execute("INSERT INTO pet_height (pet_id, height, created_at) VALUES (?, ?, ?)", [newPetId, req.body.height, addPetTime]);
+        } else {petHeightResult = "無新增身高資料"};
         // pet_weight
         let petWeightResult = [];
         if (req.body.weight.length) {
-            petWeightResult = await connection.execute("INSERT INTO pet_weight (pet_id, weight, created_at) VALUES (?, ?, ?)", [petId, req.body.weight, addPetTime]);
-        };
+            petWeightResult = await connection.execute("INSERT INTO pet_weight (pet_id, weight, created_at) VALUES (?, ?, ?)", [newPetId, req.body.weight, addPetTime]);
+        } else {petWeightResult = "無新增體重資料"};
         // 處理 vaccine req
-        let vaccineArr, petVaccResult=[];
+        let petVaccResult=[];
         if (req.body.vaccine.length > 0) {
-            vaccineArr = req.body.vaccine.split(",");
-            for (let i=0; i<vaccineArr.length; i++) {
-                petVaccResult = await connection.execute("INSERT INTO vaccination (pet_id, vaccine_category_id) VALUES (?, ?)", [petId, vaccineArr[i]]);
+            let vaccineArr = req.body.vaccine.split(",");
+            let sql = "INSERT INTO vaccination (pet_id, vaccine_category_id) VALUES ";
+            let saveData = [];
+            for (let i = 0; i < vaccineArr.length; i++) {
+                if (i === 0) {
+                    sql += "(?, ?)";
+                    saveData.push(newPetId, vaccineArr[i]);
+                } else {
+                    sql += ", (?, ?)";
+                    saveData.push(newPetId, vaccineArr[i]);
+                }
             };
-        };
+            petVaccResult = await connection.execute(sql, saveData);
+        } else {petVaccResult = "無新增疫苗資料"};
         // 處理 illness req
-        let healthArr, petHealthResult=[];
+        let petHealthResult=[];
         if (req.body.health.length > 0) {
-            healthArr = req.body.health.split(",");
+            let healthArr = req.body.health.split(",");
+            let sql = "INSERT INTO pet_illness (pet_id, illness_category_id) VALUES ";
+            let saveData = [];
             for (let i=0; i<healthArr.length; i++) {
-                petHealthResult = await connection.execute("INSERT INTO pet_illness (pet_id, illness_category_id) VALUES (?, ?)", [petId, healthArr[i]]);
+                if (i === 0) {
+                    sql += "(?, ?)";
+                    saveData.push(newPetId, healthArr[i]);
+                } else {
+                    sql += ", (?, ?)";
+                    saveData.push(newPetId, healthArr[i]);
+                }
             };
-        };
-        // console.log("petId", petId);
+            petHealthResult = await connection.execute(sql, saveData);
+        } else {petHealthResult="無新增健康資料"};
         // console.log(addPetResult);
-        if (addPetResult && petVaccResult && petHealthResult && petHeightResult && petWeightResult) {
+        if (addPetResult && 
+            petVaccResult.length && 
+            petHealthResult.length && 
+            petHeightResult.length && 
+            petWeightResult.length) {
             res.json({message: "ok"});
         } else {
             res.status(400).json({message: "錯誤"});
