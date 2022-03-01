@@ -15,17 +15,20 @@ router.get("/helpcalendar/:year/:month", async (req, res) => {
 });
 
 //該日案件列表（行事曆點開）
-router.get("/dayhelps", async (req, res) => {
+router.get("/dayhelps/:year/:month/:day", async (req, res) => {
   let [data, fields] = await connection.execute(
 // 抓出該日的所有案件及細節 再JOIN case_take抓應徵人數
-    `SELECT g.*, case_take.user_id_taker, day(date)
-    FROM case_give AS g
-    JOIN case_take ON g.id = case_take.case_id
-    WHERE g.status=0 AND day(date)= 1;`);
-    
-    // `SELECT case_give.*, case_take.user_id_taker FROM case_give WHERE status=0 AND day(date)= ${req.params.date} JOIN case_take ON case_give.id = case_take.case_id `
+    `SELECT give.*, COUNT (case_take.user_id_taker) AS taker_count, day(date), month(date), year(date), case_tag.name AS tag_name
+    FROM case_give AS give
+    JOIN case_take ON give.id = case_take.case_id
+    JOIN case_tag ON give.tag_id = case_tag.id
+    WHERE give.status=0 AND year(date) = ? AND month(date)= ? AND day(date)= ?
+    GROUP BY give.id`,[req.params.year, req.params.month, req.params.day]);
   res.json(data);
 });
+
+
+
 
 //互助專區
 router.get("/helplist", async (req, res) => {

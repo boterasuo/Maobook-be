@@ -158,20 +158,6 @@ router.post("/editData", editDataRules, async (req, res, next) => {
                 sql += "created_at=? ";
                 saveData.push(req.body.time);
             }
-            // switch (objLength) {
-            //     case 4:
-            //         sql += "height=?, created_at=? ";
-            //         saveData.push(req.body.value, req.body.time);
-            //     break;
-            //     case 3:
-            //         if(req.body.value) {
-            //             sql += "height=? ";
-            //             saveData.push(req.body.value);
-            //         }else {
-            //             sql += "created_at=? ";
-            //             saveData.push(req.body.time);
-            //         }
-            // };
             sql += "WHERE id=?";
             saveData.push(req.body.id);
 
@@ -187,20 +173,6 @@ router.post("/editData", editDataRules, async (req, res, next) => {
                 sql += "created_at=? ";
                 saveData.push(req.body.time);
             }
-            // switch (objLength) {
-            //     case 4:
-            //         sql += "weight=?, created_at=? ";
-            //         saveData.push(req.body.value, req.body.time);
-            //     break;
-            //     case 3:
-            //         if(req.body.value) {
-            //             sql += "weight=? ";
-            //             saveData.push(req.body.value);
-            //         }else {
-            //             sql += "created_at=? ";
-            //             saveData.push(req.body.time);
-            //         }
-            // };
             sql += "WHERE id=?";
             saveData.push(req.body.id);
         };
@@ -304,8 +276,7 @@ router.post("/addData", addDataRules, async (req, res, next) => {
     };    
 });
 
-
-// /api/pet/add
+// 處理圖片和資料驗證們
 const multer = require("multer");
 // 圖片存的位置
 const storage = multer.diskStorage({
@@ -341,7 +312,6 @@ const uploader = multer({
     }
 });
 
-// const { body, validationResult } = require("express-validator");
 const addPetRules = [
     // 檢查寵物姓名欄位 到家日 生日
     body("name").not().isEmpty().withMessage("此欄位不可為空"),
@@ -370,6 +340,55 @@ const addPetRules = [
     body("cate").not().isEmpty().withMessage("此欄位不可為空"),
 ];
 
+// /api/pet/editInfo
+router.post("/editInfo",
+    uploader.single("image"),
+    addPetRules,
+    async (req, res, next) => {
+        console.log("editInfo", req.body);
+        const validateResult = validationResult(req);
+        if(!validateResult.isEmpty()) {
+            let error = validateResult.mapped();
+            console.log("編輯毛孩資料錯誤", error);
+            console.log(error);
+            let errKeys = Object.keys(error);
+            let errObj={};
+            errKeys.forEach(key => errObj[key]=error[key].msg);
+            console.log(errObj);
+            return res.status(400).json(
+                errObj
+            );
+        };
+        // 根據生日判斷 age category
+        let ageCate = ""; 
+        if(req.body.birthday.length > 0) {
+            const today = moment(moment().format("YYYY-MM-DD"));
+            const birthday = moment(req.body.birthday);
+            let age = today.diff(birthday, "years", true);
+            if (age < 1) {
+                ageCate = 1;
+            }else if (age < 8) {
+                ageCate = 2;
+            }else {
+                ageCate = 3;
+            };
+            // console.log("ageCate", ageCate);
+        };
+        // 判斷是否有上傳圖檔 (新增毛孩照片)
+        let filename;
+        if(req.file) {
+            // 有上傳圖檔再寫入資料庫
+            filename = req.file ? "/static/uploads/" + req.file.filename : "";            
+        } else {
+            filename = "";
+        }
+        // console.log("filename", filename);
+        let [editResult] = await connection.execute(
+            "UPDATE pets name=?, image=?, adoptime=?, birthday=?, gender=?, category=? WHERE id=?", [req.body.name, filename, req.body.arrDay, req.body.birthday, req.body.gender, req.body.cate, req.body.id]);
+    }
+);
+
+// /api/pet/add
 router.post("/add",
     uploader.single("image"),
     addPetRules,
@@ -378,7 +397,7 @@ router.post("/add",
         const validateResult = validationResult(req);
         if(!validateResult.isEmpty()) {
             let error = validateResult.mapped();
-            console.log("毛孩資料錯誤", error);
+            console.log("新增毛孩資料錯誤", error);
             console.log(error);
             let errKeys = Object.keys(error);
             let errObj={};
@@ -418,7 +437,9 @@ router.post("/add",
         let saveData = [req.body.id, req.body.cate, req.body.name, req.body.gender, filename, req.body.birthday, ageCate, req.body.arrDay, 1, addPetTime];
         // 先存入 pets
         let [addPetResult] = await connection.execute(sql, saveData);
+        console.log("addPetResult", addPetResult);
         // 利用 user_id 和 created_at 取得剛建立的寵物 id
+        // TODO: 改用 addPetResult 內提供的 InsertId 即可!!
         let [getPetId] = await connection.execute("SELECT id FROM pets WHERE user_id=? AND created_at=?", [req.body.id, addPetTime]);
         const petId = getPetId[0].id;
         // 將身高 體重 疫苗 健康資訊 存入對應的 TABLE
