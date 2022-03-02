@@ -3,6 +3,7 @@ const router = express.Router();
 const connection = require("../utils/db"); //資料庫連線資訊
 const { checkLogin } = require("../middlewares/auth");
 const introConverter = require("../utils/introConverter");
+const { query } = require("../utils/db");
 
 router.use(checkLogin);//檢查會員登入狀態
 //產品與圖片join語法
@@ -44,14 +45,19 @@ router.get("/petlist", async (req, res, next) => { //從資料庫抓出會員ID�
 
 
 // "/api/store/productlist?page=${page}&search=${value1}&animal=${filter}&checkedPet=${checkedPet}&checkedProduct=${checkedProduct}&checkedBrand=${checkedBrand}" 產品列表區
+
+
+
+
 router.get("/productlist", async (req, res, next) => {
 
 
   let filter = req.query.animal;//篩選bar 狗跟貓判斷值
   //篩選bar
-  let checkedPet = req.query.checkedPet;
-  let checkedProduct = req.query.checkedProduct;
-  let checkedBrand = req.query.checkedBrand;
+  let checkState = req.query.checkState
+  // let checkedPet = req.query.checkedPet;
+  // let checkedProduct = req.query.checkedProduct;
+  // let checkedBrand = req.query.checkedBrand;
 
   if (req.query.search != '') {
 
@@ -82,7 +88,9 @@ router.get("/productlist", async (req, res, next) => {
     });
   }
 
-  else if (checkedPet.length !== 0 && checkedProduct.length !== 0 && checkedBrand.length !== 0) {
+  //篩選bar個別判斷是否有點選
+
+  else if (checkState) {
 
     let page = req.query.page || 1;
     let [total] = await connection.execute(`SELECT COUNT(*) AS total FROM products WHERE pet_category_id IN(${checkedPet}) AND product_category_id IN(${checkedProduct})  AND brand_category_id IN(${checkedBrand})`);
@@ -90,8 +98,16 @@ router.get("/productlist", async (req, res, next) => {
     const perPage = 6; // 計算總共應該要有幾頁
     const lastPage = Math.ceil(total / perPage);// lastPage: 總共有幾頁
     let offset = (page - 1) * perPage;// 計算 SQL 要用的 offset
-    let [data] = await connection.execute(`${SQLimage} WHERE pet_category_id IN(${checkedPet}) AND product_category_id IN(${checkedProduct})  AND brand_category_id IN(${checkedBrand}) group by products.id LIMIT ? OFFSET ?`, [perPage, offset]
-    );// 取得資料 
+    // let [data] = await connection.execute(`${SQLimage} WHERE pet_category_id IN(${checkedPet}) AND product_category_id IN(${checkedProduct})  AND brand_category_id IN (${checkedBrand}) group by products.id LIMIT ? OFFSET ?`, [perPage, offset]
+    // );// 取得資料 
+
+    //待測試
+    const group = [`group by products.id LIMIT ? OFFSET ?`]
+    // SQLimage = SQLimage + ' ' + group
+    console.log("YYYYYYYY",checkState)
+    let [data] = await connection.execute(checkState + group, [perPage, offset]);
+
+
 
     //篩選Bar的checkbox值
     let [filterPet] = await connection.execute(`SELECT id,name From pet_category WHERE name LIKE '%${filter}%'`);
