@@ -18,12 +18,14 @@ router.get("/helpcalendar/:year/:month", async (req, res) => {
 router.get("/dayhelps/:year/:month/:day", async (req, res) => {
   let [data, fields] = await connection.execute(
 // 抓出該日的所有案件及細節 再JOIN case_take抓應徵人數
+// 再JOIN 抓出tag名稱
     `SELECT give.*, COUNT (case_take.user_id_taker) AS taker_count, day(date), month(date), year(date), case_tag.name AS tag_name
     FROM case_give AS give
     JOIN case_take ON give.id = case_take.case_id
     JOIN case_tag ON give.tag_id = case_tag.id
     WHERE give.status=0 AND year(date) = ? AND month(date)= ? AND day(date)= ?
-    GROUP BY give.id`,[req.params.year, req.params.month, req.params.day]);
+    GROUP BY give.id
+    ORDER BY give.region DESC`,[req.params.year, req.params.month, req.params.day]);
   res.json(data);
 });
 
@@ -31,10 +33,14 @@ router.get("/dayhelps/:year/:month/:day", async (req, res) => {
 
 
 //互助專區
-router.get("/helplist", async (req, res) => {
+router.get("/helpcard/:region", async (req, res) => {
   let [data, fields] = await connection.execute(
 //抓出該地區的所有案件及細節 再JOIN users抓使用者頭像
-    `SELECT case_give.*, users.image FROM case_give WHERE status=0 AND region = ${req.params.region} JOIN users ON case_give.user_id_giver = users.id`);
+    `SELECT case_give.*, users.image AS user_image, case_tag.name AS tag_name FROM case_give 
+    JOIN users ON case_give.user_id_giver = users.id
+    JOIN case_tag ON case_give.tag_id = case_tag.id
+    WHERE status=0 AND region = ?
+    ORDER BY case_give.date ASC`, [req.params.region]);
   res.json(data);
 });
 
@@ -48,10 +54,14 @@ router.post("/helppost", async (req, res) => {
 });
 
 //案件細節頁（案件列表或互助專區點開）
-router.get("/helpdetails", async (req, res) => {
+router.get("/helpdetails/:id", async (req, res) => {
   let [data, fields] = await connection.execute(
 //抓出該案件的所有細節 再JOIN users抓使用者頭像及暱稱
-    `SELECT case_give.*, users.image, users.name FROM case_give WHERE status=0 AND id = ${req.params.id} JOIN users ON case_give.user_id_giver = users.id`);
+    `SELECT case_give.*, users.image AS user_image, users.name AS user_name, case_tag.name AS tag_name
+    FROM case_give 
+    JOIN users ON case_give.user_id_giver = users.id
+    JOIN case_tag ON case_give.tag_id = case_tag.id
+    WHERE case_give.status=0 AND case_give.id = ?`, [req.params.id]);
   res.json(data);
 });
 
