@@ -10,7 +10,7 @@ router.post('/register', async (req, res, next) => {
   console.log(Tag)
 
   let [result] = await connection.execute(
-    'INSERT INTO schedules (pet_id, date, importance, tags, category_id, title, status	) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO schedules (pet_id, DATE, importance, tags, category_id, title, status	) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [
       req.body.pets,
       req.body.date,
