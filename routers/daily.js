@@ -13,32 +13,12 @@ const moment = require("moment");
 //       res.json(data);
 //     });
 
-// 四張cards
-router.get("/card", async (req, res, next) => {
-  let [data, field] = await connection.execute(
-    `
-    SELECT 
-    social_diary.id, social_diary.image, social_diary.tittle, social_diary.content,social_diary.created_at,
-    users.name as poster, users.image AS avatar,
-    GROUP_CONCAT(tag_name.name SEPARATOR ',') as tags
-    FROM social_diary
-    LEFT JOIN users ON social_diary.user_id = users.id
-    LEFT JOIN diary_tags ON diary_tags.diary_id = social_diary.id
-    LEFT JOIN tag_name ON diary_tags.tag_id = tag_name.id
-    GROUP BY diary_id
-    LIMIT 4
-    `
-  );
-  res.json(data);
-});
-
-
 // 全部資料
 router.get("/card-list", async (req, res, next) => {
   let [data, field] = await connection.execute(
     `
     SELECT 
-    Card.id, Card.image, Card.title, Card.content,Card.created_at,
+    Card.id, Card.image, Card.tittle, Card.content,Card.created_at,
     users.name as poster, users.image AS avatar,
    Card.likes, Card.comments,
    GROUP_CONCAT(tag_name.name SEPARATOR ',') as tags
@@ -71,44 +51,48 @@ SELECT
   res.json(data);
 });
 
-// 對應的按讚列表 (貼文 x 按讚內容) 
+// 對應的按讚列表 (貼文 x 按讚內容)
 router.get("/like-list/:likeDiaryID", async (req, res) => {
   let [data, fields] = await connection.execute(
-`
+    `
 SELECT users.name, GROUP
 FROM diary_like AS likes
 JOIN users on likes.user_id = users.id 
-WHERE likes.diary_id = ?`,[req.params.likeDiaryID]);
-  res.json(data);
-});
-
-// 對應的留言列表 (貼文 x 留言內容) 
-  router.get("/comment-list/:commentDiaryID", async (req, res) => {
-    let [data, fields] = await connection.execute(
-  ` SELECT comments.id, comments.diary_id, users.name, comments.comment, comments.created_at
-  FROM diary_comments AS comments
-  JOIN users on comments.user_id = users.id 
-  WHERE comments.diary_id = ?`,[req.params.commentDiaryID]);
-    res.json(data);
-  });
-
-
-// TODO: 新增貼文 ->檢查標籤/分類是否已存在
-router.post("/add", async (req, res, next) => {
-  let [data, field] = await connection.execute(
-    "SELECT * FROM diary_like JOIN social_dairy ON diary_like.diary_id = social_diary.id"
+WHERE likes.diary_id = ?`,
+    [req.params.likeDiaryID]
   );
-  // console.log("returnUserInfo: ", returnUserInfo);
   res.json(data);
 });
 
-//TODO: 修改貼文內容
-router.put("/Edit", async (req, res) => {
+// 對應的留言列表 (貼文 x 留言內容)
+router.get("/comment-list/:diaryId", async (req, res) => {
   let [data, fields] = await connection.execute(
-    `UPDATE case_give SET title=?, date=?, price=?, region=?, content=?, category=?, tags=?, img=? WHERE id = ${req.params.id}`, [req.params.title,req.params.date, req.params.price, req.params.region, req.params.content, req.params.category, req.params.tags, req.params.img]);
+    ` SELECT comments.id, comments.diary_id, users.name, users.image AS avatar, comments.comment, comments.created_at
+  FROM diary_comments AS comments
+  JOIN users on comments.user_id = users.id
+  WHERE comments.diary_id = ?`,
+    [req.params.diaryId]
+  );
   res.json(data);
 });
 
-//TODO: 刪除貼文內容
+// router.get("/comment-list/:diaryId", async (req, res) => {
+//   let [data, fields] = await connection.execute(
+// ` SELECT comments.id, comments.diary_id, users.name, users.image AS commenter, comments.comment, comments.created_at
+// FROM diary_comments AS comments
+// JOIN users on comments.user_id = users.id
+// WHERE comments.diary_id = ?
+// ORDER BY created_at DESC `,[req.params.diaryId])
+//   res.json(data);
+// });
+
+// 送出貼文留言API
+router.post("/AddComment", async (req, res, next) => {
+  //  req.session.member.id取得登入會員id
+  let [data, fields] = await connection.execute(
+    `INSERT INTO diary_comments (id, diary_id, user_id, comment, created_at	) VALUES ('${req.body.id}','${req.body.cardID}','${req.session.member.id}','${req.body.comment}',NOW())`
+ );
+  res.json(data);
+});
 
 module.exports = router;

@@ -5,6 +5,9 @@ require('dotenv').config()
 const path = require('path')
 const connection = require('./utils/db')
 const cors = require('cors')
+// const passport = require("./config/passport")
+const passport = require("passport")
+require("./config/passport")(passport);
 
 // 利用 express 這個 library 來建立一個 web app (express instance)
 let app = express()
@@ -37,6 +40,8 @@ app.use(
     saveUninitialized: false,
   })
 )
+app.use(passport.initialize());
+app.use(passport.session());
 
 // 靜態檔案
 app.use('/static', express.static(path.join(__dirname, 'public')))
@@ -80,6 +85,11 @@ app.use((req, res, next) => {
 //     });
 //     res.json(data);
 // });
+
+36
+// 第三方登入 router (測試中)
+let facebookLogin = require("./routers/facebookLogin")
+app.use("/api/users", facebookLogin);
 
 // 會員登入的 router
 let memberRouter = require('./routers/member')
