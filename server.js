@@ -102,9 +102,14 @@ app.use('/api/calenderPost', schedualPostRouter)
 // 行事曆的撰寫送表單 router
 let schedualFormRouter = require('./routers/calenderForm')
 app.use('/api/calenderForm', schedualFormRouter)
-//商店首頁router
+//商店用router
 let storeRouter = require("./routers/store");
 app.use("/api/store", storeRouter);
+let cartRouter = require("./routers/cart");
+app.use("/api/cart", cartRouter);
+let orderRouter = require("./routers/order");
+app.use("/api/order", orderRouter);
+
 //互助用router
 let helpRouter = require("./routers/help");
 app.use("/api/help", helpRouter);
@@ -115,11 +120,7 @@ app.use("/api/daily", dailyRouter);
 let discussRouter = require("./routers/discuss");
 app.use("/api/discuss", discussRouter);
 
-let cartRouter = require("./routers/cart");
-app.use("/api/store", cartRouter);
 
-let orderRouter = require("./routers/order");
-app.use("/api/store", orderRouter);
 
 
 // 既然前面都比對不到, 那表示這裡是 404 (最後面)

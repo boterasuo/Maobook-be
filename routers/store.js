@@ -24,6 +24,7 @@ router.get("/petlist", async (req, res, next) => { //從資料庫抓出會員ID�
 
 
   res.json(processIllness);
+// res.json(req.session.member.id)
 });
 
 
@@ -267,4 +268,5 @@ router.get("/productlist/toy", async (req, res, next) => {
 
 
 module.exports = router;
+
 
