@@ -41,7 +41,7 @@ module.exports = function (passport) {
         // 若資料庫內無資料 --> 初次FB登入 --> 寫入資料庫
         let signUpTime = moment().format('YYYY-MM-DD kk:mm:ss')
         let [createFBuser] = await connection.execute(
-          "INSERT INTO users (name, email, image, fb_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
+          "INSERT INTO users (name, email, image, fb_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
             profile.displayName, 
             profile.emails[0].value, 
             profile.photos[0].value, 
