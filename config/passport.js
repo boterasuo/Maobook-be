@@ -20,6 +20,12 @@ module.exports = function (passport) {
     done(null, user.id)
   })
 
+  // // 以ID去撈user資料
+  // passport.deserializeUser((id, done) => {
+  //   console.log('Inside deserialize User callback')
+  //   done(null, id);
+  // })
+
   passport.use(new FacebookTokenStrategy({
       clientID: process.env.FACEBOOK_CLIENT_ID,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
@@ -39,6 +45,7 @@ module.exports = function (passport) {
       // console.log("findUser", findUser);
       if (!findUser.length) {
         // 若資料庫內無資料 --> 初次FB登入 --> 寫入資料庫
+        console.log("first login by FB!")
         let signUpTime = moment().format('YYYY-MM-DD kk:mm:ss')
         let [createFBuser] = await connection.execute(
           "INSERT INTO users (name, email, image, fb_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
@@ -50,6 +57,17 @@ module.exports = function (passport) {
             1, 
             signUpTime]);
         user = {...user, 'id':createFBuser.insertId}          
+      } else {
+        console.log("NOT first login by FB!")
+        let [searchFBuser] = await connection.execute(
+          "SELECT * FROM users WHERE fb_id=?", [profile.id]
+        );
+        user = {...user, 
+          "id": searchFBuser[0].id,
+          "email": searchFBuser[0].email,
+          "name": searchFBuser[0].name,
+          "image": searchFBuser[0].image,
+        }
       }
       return done(null, user);
     }
