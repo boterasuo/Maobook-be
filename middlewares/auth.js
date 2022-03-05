@@ -4,6 +4,7 @@ let checkLogin = function (req, res, next) {
     // req.session.member
     if (req.session.member) {
         // 表示登入過
+        console.log("checkLogin", req.session.member)
         next();
     } else {
         // 表示尚未登入過

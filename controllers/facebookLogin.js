@@ -29,20 +29,15 @@ const passport = require("passport")
 //     res.json({data: req.user});
 // })
 
-module.exports.facebook = (req, res) => {
+module.exports.facebook = (req, res, next) => {
   passport.authenticate('facebook-token', function(error, user, info) {
     // do stuff with user
-    console.log("user", user);
-    // 把從 FB 要到的資料寫入 session (要再加上 id)
-    let returnMember = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      image: user.image,
-    }
-    req.session.member = returnMember
-    res.json(returnMember);
-  })(req, res);
+    // if (req.sessionID && user) {
+      console.log("user", user);
+        let returnMember = {id: user.id}
+        res.json(returnMember);
+    // }
+  })(req, res, next);
 }
 
 // router.post('/:access_token',
