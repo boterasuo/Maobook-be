@@ -16,6 +16,7 @@ router.get("/", (req, res, next) => {
 
 // /api/member/info
 router.get("/info", async (req, res, next) => {
+    console.log("/member/info", req.session.member.id)
     let [userInfo] = await connection.execute("SELECT * FROM users WHERE id=?", [req.session.member.id]);
     // console.log("會員詳細資料", userInfo);
     userInfo = userInfo[0];
@@ -28,6 +29,7 @@ router.get("/info", async (req, res, next) => {
         mobile: userInfo.mobile,
         birthday: userInfo.birthday,
         address: userInfo.living_address,
+        google: userInfo.google_id,
     };
     // console.log("returnUserInfo: ", returnUserInfo);
     res.json({

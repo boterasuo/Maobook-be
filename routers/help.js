@@ -14,14 +14,14 @@ router.get("/helpcalendar/:year/:month", async (req, res) => {
     res.json(data);
 });
 
-//該日案件列表（行事曆點開）
+//該日案件列表（連動行事曆）
 router.get("/dayhelps/:year/:month/:day", async (req, res) => {
   let [data, fields] = await connection.execute(
 // 抓出該日的所有案件及細節 再JOIN case_take抓應徵人數
 // 再JOIN 抓出tag名稱
     `SELECT give.*, COUNT (case_take.user_id_taker) AS taker_count, day(date), month(date), year(date), case_tag.name AS tag_name
     FROM case_give AS give
-    JOIN case_take ON give.id = case_take.case_id
+    LEFT JOIN case_take ON give.id = case_take.case_id
     JOIN case_tag ON give.tag_id = case_tag.id
     WHERE give.status=0 AND year(date) = ? AND month(date)= ? AND day(date)= ?
     GROUP BY give.id
@@ -82,5 +82,16 @@ router.put("/helpdetails", async (req, res) => {
   res.json(data);
 });
 
+
+
+// MEMBER 歷史紀錄：該會員的發案紀錄
+router.get("/memberGiveHistory/:user_id_giver", async (req, res) => {
+  let [data, fields] = await connection.execute(
+// http://localhost:3002/api/help/memberGiveHistory/
+// 抓出該日的所有案件及細節 再JOIN case_take抓應徵人數
+// 再JOIN 抓出tag名稱
+    `SELECT give.*, COUNT(case_take.user_id_taker) AS taker_count, DAY(DATE), MONTH(DATE), YEAR(DATE), case_tag.name AS tag_name, users.id AS userid FROM case_give AS give JOIN case_take ON give.id = case_take.case_id JOIN case_tag ON give.tag_id = case_tag.id JOIN users ON give.user_id_giver =users.id WHERE user_id_giver = ? GROUP BY give.id ORDER BY give.region DESC;`,[req.params.user_id_giver]);
+  res.json(data);
+});
 
   module.exports = router;
