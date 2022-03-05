@@ -3193,6 +3193,13 @@
   dependencies:
     "passport-oauth" "1.0.0"
 
+"passport-google-oauth-token@^1.0.3":
+  "integrity" "sha512-CcMU2U3osg3QA+0hJl976Z4LjXjx4LLDjos8Gug3qZqLA6tQHkq1vVGJX9szU1qOOTcK8cRmcGW1yON9XqTAdg=="
+  "resolved" "https://registry.npmjs.org/passport-google-oauth-token/-/passport-google-oauth-token-1.0.3.tgz"
+  "version" "1.0.3"
+  dependencies:
+    "passport-oauth2" "^1.6.0"
+
 "passport-oauth@1.0.0":
   "integrity" "sha1-kK/2M4dUDwIImvKM2tOep/gNd98="
   "resolved" "https://registry.npmjs.org/passport-oauth/-/passport-oauth-1.0.0.tgz"
@@ -3210,7 +3217,7 @@
     "passport-strategy" "1.x.x"
     "utils-merge" "1.x.x"
 
-"passport-oauth2@1.x.x":
+"passport-oauth2@^1.6.0", "passport-oauth2@1.x.x":
   "integrity" "sha512-ZbV43Hq9d/SBSYQ22GOiglFsjsD1YY/qdiptA+8ej+9C1dL1TVB+mBE5kDH/D4AJo50+2i8f4bx0vg4/yDDZCQ=="
   "resolved" "https://registry.npmjs.org/passport-oauth2/-/passport-oauth2-1.6.1.tgz"
   "version" "1.6.1"

@@ -320,6 +320,7 @@ router.post("/deleteData/:type", async (req, res, next) => {
     sql += "WHERE id=?"
     // 刪除該筆資料
     let [deleteResult] = await connection.execute(sql, [deleteId]);
+    console.log("deleteResult", deleteResult)
     if (deleteResult) {
         res.json({message: "ok"})
     } else {

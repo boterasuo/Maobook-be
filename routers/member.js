@@ -29,6 +29,7 @@ router.get("/info", async (req, res, next) => {
         mobile: userInfo.mobile,
         birthday: userInfo.birthday,
         address: userInfo.living_address,
+        google: userInfo.google_id,
     };
     // console.log("returnUserInfo: ", returnUserInfo);
     res.json({
