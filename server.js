@@ -64,27 +64,6 @@ app.use((req, res, next) => {
   next()
 })
 
-// 行事曆的日曆事件API
-// app.get("/api/calendarE/:year/:month", async (req, res, next) => {
-//     let [data, fields] = await connection.execute
-//     ("SELECT  day(date) AS date, GROUP_CONCAT(DISTINCT category_id) AS category_id FROM Schedules WHERE year(date) = ? AND month(date)= ?  group by DATE(date) order by DATE(date);",
-//     [req.params.year,req.params.month]);
-//     data.map(d => {
-//         d.category_id = d.category_id.split(",");
-//     });
-//     res.json(data);
-// });
-
-// 行事曆記事事件API 正在改
-// app.get("/api/calenderNote/:year/:month", async (req, res, next) => {
-//     let [data, fields] = await connection.execute
-//     ("SELECT pet_id AS pet_id, DAY(DATE) AS DATE, importance AS importance, tags AS tags, category_id AS category_id, title AS title, status AS status FROM Schedules WHERE year(date) = ? AND month(date)= ? ;",
-//     [req.params.year,req.params.month]);
-//     data.map(d => {
-//         d.tags = d.tags.split(',');
-//     });
-//     res.json(data);
-// });
 
 36
 // 第三方登入 router (測試中)
