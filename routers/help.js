@@ -14,14 +14,14 @@ router.get("/helpcalendar/:year/:month", async (req, res) => {
     res.json(data);
 });
 
-//該日案件列表（行事曆點開）
+//該日案件列表（連動行事曆）
 router.get("/dayhelps/:year/:month/:day", async (req, res) => {
   let [data, fields] = await connection.execute(
 // 抓出該日的所有案件及細節 再JOIN case_take抓應徵人數
 // 再JOIN 抓出tag名稱
     `SELECT give.*, COUNT (case_take.user_id_taker) AS taker_count, day(date), month(date), year(date), case_tag.name AS tag_name
     FROM case_give AS give
-    JOIN case_take ON give.id = case_take.case_id
+    LEFT JOIN case_take ON give.id = case_take.case_id
     JOIN case_tag ON give.tag_id = case_tag.id
     WHERE give.status=0 AND year(date) = ? AND month(date)= ? AND day(date)= ?
     GROUP BY give.id
