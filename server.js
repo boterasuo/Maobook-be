@@ -20,7 +20,6 @@ app.use(
     credentials: true,
   })
 )
-
 // 內建的中間件: urlencoded 要讓 express 認得 body 裡的資料
 app.use(express.urlencoded({ extended: true }))
 // 要讓 express 認得 json (放最前面後面的才會認得)
@@ -108,6 +107,10 @@ let dailyRouter = require("./routers/daily");
 app.use("/api/daily", dailyRouter);
 let discussRouter = require("./routers/discuss");
 app.use("/api/discuss", discussRouter);
+
+// 歷史記錄用router
+let hitsoryRouter = require("./routers/history");
+app.use("/api/history", hitsoryRouter);
 
 
 
