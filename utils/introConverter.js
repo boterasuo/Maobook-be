@@ -5,9 +5,9 @@ function convertIntro(petList) {
   let processIntroData = petList.map((d) => {
     // 處理品種
     if (d.category == 1) {
-      d.category = "可愛狗兒"
+      d.category = "狗狗"
     } else {
-      d.category = "可愛貓咪"
+      d.category = "貓咪"
     }
 
     // 計算年紀
