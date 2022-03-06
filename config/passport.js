@@ -9,21 +9,6 @@ const axios = require("axios");
 const { reject } = require('bcrypt/promises');
 
 module.exports = function (passport) {
-  // passport.serializeUser((user, done) => {
-  //   console.log('Inside serialize User callback')
-  //   done(null, user.id)
-  // })
-
-  // passport.deserializeUser(async (id, done) => {
-  //   console.log('Inside deserialize User callback')
-  //   let [findFBuser] = await connection.execute("SELECT * FROM users WHERE id=?", [id]);
-  //   if (findFBuser) {
-  //     console.log("deserializeUser", findFBuser)
-  //     return done(null, findFBUser[0]);
-  //   } else {
-  //     return done(null, false, {errors: {"FB login":"找無使用者"},})
-  //   }
-  // })
 
   passport.use(new FacebookTokenStrategy({
       clientID: process.env.FACEBOOK_CLIENT_ID,
