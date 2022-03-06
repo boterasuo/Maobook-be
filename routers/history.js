@@ -2,7 +2,7 @@ const express = require('express')
 const nodemailer = require('nodemailer')
 const router = express.Router()
 const connection = require('../utils/db')
-const {sendCaseMail} = require('./nodemailer')
+const { sendCaseMail } = require('./nodemailer')
 
 
 // 修改案件狀態API
@@ -16,7 +16,8 @@ router.post('/caseState', async (req, res, next) => {
   )
   // 寄信
   let email = req.body.takenemail
-  sendCaseMail(email)
+  let mailType = req.body.category
+  sendCaseMail(email,mailType)
 
   //console.log(email);
 
