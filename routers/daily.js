@@ -40,15 +40,16 @@ SELECT
 });
 
 // 新增貼文
-router.get("/Add", async (req, res, next) => {
+router.post("/Add", async (req, res, next) => {
+  uploader.single("image");
   // 剔除空格
-  let fsTag = req.body.firstTag.trim();
-  let mdTag = req.body.midTag.trim();
-  let lsTag = req.body.lastTag.trim();
+  let fsTag = req.body.firstTag;
+  let mdTag = req.body.midTag;
+  let lsTag = req.body.lastTag;
   // 合併Tags
   const Tags = `${fsTag},${mdTag},${lsTag}`;
   let [data, field] = await connection.execute(
-    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES (?,?,?,?,?)`,
+    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES (?,?,?,?,?,?,?)`,
     [
       req.body.id,
       req.session.member.id,
@@ -60,6 +61,7 @@ router.get("/Add", async (req, res, next) => {
     ]
   );
   res.json(data);
+  console.log('req.body',req.body);
 });
 
 // 對應的留言列表 (貼文 x 留言內容)
@@ -177,4 +179,42 @@ WHERE likes.user_id = ? AND likes.diary_id = ? `
   );
   res.json(data);
 });
+
+// 處理圖片和資料驗證們
+const multer = require("multer");
+// 圖片存的位置
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, path.join(__dirname, "..","public", "uploads"));
+    },
+    filename: function(req, file, cb) {
+        console.log("multer-filename", file);
+        const ext = file.originalname.split(".").pop();
+        // TODO: 有時間的話檔名改用 uuid
+        cb(null, `member-${Date.now()}.${ext}`);
+    },
+});
+
+const uploader = multer({
+    storage: storage,
+    // 過濾圖片
+    fileFilter: function(req, file, cb) {
+        console.log("file.mimetype", file.mimetype);
+        if(
+            file.mimetype !== "image/jpeg" &&
+            file.mimetype !== "image/jpg" &&
+            file.mimetype !== "image/png" 
+        ) {
+            cb(new Error("不接受的檔案型態"), false);
+        } else {
+            cb(null, true);
+        }
+    },
+    // 檔案尺寸
+    limits: {
+        fileSize: 1024 * 1024,
+    }
+});
+
+
 module.exports = router;
