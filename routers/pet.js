@@ -12,13 +12,13 @@ router.use(checkLogin);
 
 // /api/pet
 router.get("/", async (req, res, next) => {
-    let sql = "SELECT id, user_id, name, image FROM pets WHERE user_id=?";
-    let saveData = [req.session.member.id];
+    let sql = "SELECT id, user_id, name, image FROM pets WHERE user_id=? AND valid!=?";
+    let saveData = [req.session.member.id, 9];
     let pagination = {};
     if (req.query.page) {
         let page = req.query.page;
         console.log("page", page)
-        let [total] = await connection.execute("SELECT COUNT(*) AS total FROM pets WHERE user_id=?", [req.session.member.id]);
+        let [total] = await connection.execute("SELECT COUNT(*) AS total FROM pets WHERE user_id=? AND valid!=?", [req.session.member.id, 9]);
         total = total[0].total;
         const perPage = 9;
         const lastPage = Math.ceil(total / perPage);
@@ -439,7 +439,7 @@ router.post("/editInfo",
         }
         // console.log("filename", filename);
         let [editResult] = await connection.execute(
-            "UPDATE pets SET name=?, image=?, adoptime=?, birthday=?, age_category=?, gender=?, category=? WHERE id=?", [req.body.name, filename, req.body.arrDay, req.body.birthday, ageCate, req.body.gender, req.body.cate, req.body.id]);
+            "UPDATE pets SET name=?, image=?, adoptime=?, birthday=?, age_category=?, gender=?, category=?, valid=? WHERE id=?", [req.body.name, filename, req.body.arrDay, req.body.birthday, ageCate, req.body.gender, req.body.cate, req.body.valid, req.body.id]);
         // console.log("editResult", editResult);
         // 比對 vaccination --> 若內容不同則先全刪再全存
         let [vaccineData] = await connection.execute(
@@ -452,18 +452,20 @@ router.post("/editInfo",
             let [vaccineDelete] = await connection.execute(
                 "DELETE FROM vaccination WHERE pet_id=?",[req.body.id]);
             let vaccineArr = req.body.vaccine.split(",");
-            let sql = "INSERT INTO vaccination (pet_id, vaccine_category_id) VALUES ";
-            let saveData = [];
-            for (let i=0; i<vaccineArr.length; i++) {
-                if (i === 0) {
-                    sql += "(?, ?)";
-                    saveData.push(req.body.id, vaccineArr[i]);
-                } else {
-                    sql += ", (?, ?)";
-                    saveData.push(req.body.id, vaccineArr[i]);
-                }
-            };
-            petVaccResult = await connection.execute(sql, saveData);
+            if (vaccineArr[0] !== "") {
+                let sql = "INSERT INTO vaccination (pet_id, vaccine_category_id) VALUES ";
+                let saveData = [];
+                for (let i=0; i<vaccineArr.length; i++) {
+                    if (i === 0) {
+                        sql += "(?, ?)";
+                        saveData.push(req.body.id, vaccineArr[i]);
+                    } else {
+                        sql += ", (?, ?)";
+                        saveData.push(req.body.id, vaccineArr[i]);
+                    }
+                };
+                petVaccResult = await connection.execute(sql, saveData);
+            }
         } else { petVaccResult = "疫苗資料無修改"};
         // console.log("petVaccResult", petVaccResult);
 
@@ -477,18 +479,20 @@ router.post("/editInfo",
             let [healthDelete] = await connection.execute(
                 "DELETE FROM pet_illness WHERE pet_id=?",[req.body.id]);
             let healthArr = req.body.health.split(",");
-            let sql = "INSERT INTO pet_illness (pet_id, illness_category_id) VALUES ";
-            let saveData = [];
-            for (let i=0; i<healthArr.length; i++) {
-                if (i === 0) {
-                    sql += "(?, ?)";
-                    saveData.push(req.body.id, healthArr[i]);
-                } else {
-                    sql += ", (?, ?)";
-                    saveData.push(req.body.id, healthArr[i]);
-                }
-            };
-            petHealthResult = await connection.execute(sql, saveData);
+            if (healthArr[0] !== "") {
+                let sql = "INSERT INTO pet_illness (pet_id, illness_category_id) VALUES ";
+                let saveData = [];
+                for (let i=0; i<healthArr.length; i++) {
+                    if (i === 0) {
+                        sql += "(?, ?)";
+                        saveData.push(req.body.id, healthArr[i]);
+                    } else {
+                        sql += ", (?, ?)";
+                        saveData.push(req.body.id, healthArr[i]);
+                    }
+                };
+                petHealthResult = await connection.execute(sql, saveData);
+            }
         } else {petHealthResult = "健康資料無修改"};
         // console.log("petHealthResult", petHealthResult);
         if (editResult && 
