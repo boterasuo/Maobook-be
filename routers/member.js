@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const connection = require("../utils/db");
+const bcrypt = require('bcrypt')
 const { checkLogin } = require("../middlewares/auth");
 const path = require("path");
 const moment = require("moment");
@@ -29,6 +30,7 @@ router.get("/info", async (req, res, next) => {
         mobile: userInfo.mobile,
         birthday: userInfo.birthday,
         address: userInfo.living_address,
+        google: userInfo.google_id,
     };
     // console.log("returnUserInfo: ", returnUserInfo);
     res.json({
@@ -155,9 +157,45 @@ router.post("/edit",
         } else {
             res.status(400).json({ message: "錯誤" });
         }
-    });
+});
 
+// /api/member/changePw
+// 先比對原密碼, 再 UPDATE 新密碼
+router.post("/changePw", async (req, res, next) => {
+    console.log("改密碼", req.body);
+    let [getOldPw] = await connection.execute("SELECT password FROM users WHERE id=?", [req.session.member.id]);
+    getOldPw = getOldPw[0].password;
+    let result = await bcrypt.compare(req.body.oldPassword, getOldPw);
+    // console.log("compare result", result);
+    if (!result) {
+        // 如果舊密碼比對失敗
+        return res.status(400).json({
+            oldPassword: '原密碼錯誤！',
+        });
+    }
+    if (req.body.newPassword.length < 8) {
+        return res.status(400).json({
+            newPassword: '密碼長度至少為 8',
+        });
+    }
+    if (req.body.oldPassword === req.body.newPassword) {
+        return res.status(400).json({
+            newPassword: '新密碼不可與舊密碼相同',
+        });
+    }
+    if (req.body.newPassword !== req.body.confirmNewPassword) {
+        return res.status(400).json({
+            confirmNewPassword: '密碼驗證不一致',
+        });
+    }
+    // 若舊密碼 ok + 新舊密碼不同 + 確認密碼 ok --> 更新到資料庫
+    // 雜湊 password
+    let hashPassword = await bcrypt.hash(req.body.newPassword, 10)
+    let [updatePwResult] = await connection.execute("UPDATE users SET password=? WHERE id=?", [hashPassword, req.session.member.id]);
+    console.log("更新密碼結果:", updatePwResult);
+    res.json({ message: 'ok' });
 
+});
 
 
 module.exports = router;
