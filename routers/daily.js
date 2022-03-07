@@ -62,19 +62,6 @@ router.get("/Add", async (req, res, next) => {
   res.json(data);
 });
 
-// 對應的按讚列表 (貼文 x 按讚內容)
-router.get("/like-list/:likeUser", async (req, res) => {
-  let [data, fields] = await connection.execute(
-    `
-SELECT likes.*, users.name
-FROM diary_like AS likes
-JOIN users on likes.user_id = users.id 
-WHERE users.id = ?`,
-    [req.params.likeUser]
-  );
-  res.json(data);
-});
-
 // 對應的留言列表 (貼文 x 留言內容)
 router.get("/comment-list/:diaryId", async (req, res) => {
   let [data, fields] = await connection.execute(
@@ -114,7 +101,7 @@ router.get("/card-pages", async (req, res, next) => {
 
   // 取得目前的總筆數
   let [total] = await connection.execute(
-  `
+    `
   SELECT COUNT(*) AS total FROM social_diary
   `
   );
@@ -167,4 +154,27 @@ SELECT
   });
 });
 
+// 按讚 先篩選
+router.post("/give-like", async (req, res, next) => {
+  //  req.session.member.id取得登入會員id
+  let [data, fields] = await connection.execute(
+    `
+  INSERT IGNORE INTO diary_like(user_id, diary_id) VALUES ('${req.session.member.id}','${req.body.cardID}')
+  `
+  );
+  res.json(data);
+});
+
+// 對應的按讚列表 (貼文 x 按讚內容)
+router.post("/like-list/:userID/:cardID", async (req, res) => {
+  let [data, fields] = await connection.execute(
+    `
+SELECT likes.*, users.name
+FROM diary_like AS likes
+JOIN users on likes.user_id = users.id 
+WHERE likes.user_id = ? AND likes.diary_id = ? `
+,[req.params.userID, req.params.cardID]
+  );
+  res.json(data);
+});
 module.exports = router;
