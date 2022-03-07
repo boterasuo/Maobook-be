@@ -12,13 +12,13 @@ router.use(checkLogin);
 
 // /api/pet
 router.get("/", async (req, res, next) => {
-    let sql = "SELECT id, user_id, name, image FROM pets WHERE user_id=?";
-    let saveData = [req.session.member.id];
+    let sql = "SELECT id, user_id, name, image FROM pets WHERE user_id=? AND valid!=?";
+    let saveData = [req.session.member.id, 9];
     let pagination = {};
     if (req.query.page) {
         let page = req.query.page;
         console.log("page", page)
-        let [total] = await connection.execute("SELECT COUNT(*) AS total FROM pets WHERE user_id=?", [req.session.member.id]);
+        let [total] = await connection.execute("SELECT COUNT(*) AS total FROM pets WHERE user_id=? AND valid!=?", [req.session.member.id, 9]);
         total = total[0].total;
         const perPage = 9;
         const lastPage = Math.ceil(total / perPage);
@@ -439,7 +439,7 @@ router.post("/editInfo",
         }
         // console.log("filename", filename);
         let [editResult] = await connection.execute(
-            "UPDATE pets SET name=?, image=?, adoptime=?, birthday=?, age_category=?, gender=?, category=? WHERE id=?", [req.body.name, filename, req.body.arrDay, req.body.birthday, ageCate, req.body.gender, req.body.cate, req.body.id]);
+            "UPDATE pets SET name=?, image=?, adoptime=?, birthday=?, age_category=?, gender=?, category=?, valid=? WHERE id=?", [req.body.name, filename, req.body.arrDay, req.body.birthday, ageCate, req.body.gender, req.body.cate, req.body.valid, req.body.id]);
         // console.log("editResult", editResult);
         // 比對 vaccination --> 若內容不同則先全刪再全存
         let [vaccineData] = await connection.execute(
