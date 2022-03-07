@@ -89,15 +89,6 @@ router.post("/helpdetails", async (req, res) => {
   res.json(data);
 });
 
-//案件細節頁：發案者編輯案件內容
-router.put("/helpdetails", async (req, res) => {
-  let [data, fields] = await connection.execute(
-//修改案件內容
-    `UPDATE case_give SET title=?, date=?, price=?, region=?, content=?, category=?, tags=?, img=? WHERE id = ${req.params.id}`, [req.params.title,req.params.date, req.params.price, req.params.region, req.params.content, req.params.category, req.params.tags, req.params.img]);
-  res.json(data);
-});
-
-
 
 // MEMBER 歷史紀錄：該會員的發案紀錄
 router.get("/memberGiveHistory/:user_id_giver", async (req, res) => {
