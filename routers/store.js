@@ -35,43 +35,46 @@ router.get("/recomProduct", async (req, res, next) => { //從資料庫抓
     petID = req.query.petID
     //先抓出寵物的疾病ID
     let [illnessID] = await connection.execute("SELECT illness_category_id FROM pet_illness WHERE pet_id=?", [petID]);
-    //轉成字串
-    let newillnessID = illnessID.map((d) => {
-      return (d.illness_category_id).toString()
-    })
-    //再從疾病產品中，找出包含這些疾病ID的產品
-    let [Rrecomproduct] = await connection.execute(`SELECT * FROM product_illness WHERE illness_category_id IN (${newillnessID})`);
-    // console.log("Rrecomproduct", Rrecomproduct)
+    console.log("illnessID", illnessID)
+    if (illnessID.length > 0) {
+      //轉成字串
+      let newillnessID = illnessID.map((d) => {
+        return (d.illness_category_id).toString()
+      })
+      //再從疾病產品中，找出包含這些疾病ID的產品
+      let [Rrecomproduct] = await connection.execute(`SELECT * FROM product_illness WHERE illness_category_id IN (${newillnessID})`);
+      // console.log("Rrecomproduct", Rrecomproduct)
 
-    //再從商品中計算重複的次數，藉此找出在最符合的前三名
-    //1.先計算每個商品出現的次數
-    var result = [];
-    Rrecomproduct.reduce(function (res, value) {
-      if (!res[value.product_id]) {
-        res[value.product_id] = { product_id: value.product_id, count: 0 };
-        result.push(res[value.product_id])
-      }
-      res[value.product_id].count += 1;
-      return res;
-    }, {});
-    // console.log("count", result)
+      //再從商品中計算重複的次數，藉此找出在最符合的前三名
+      //1.先計算每個商品出現的次數
+      var result = [];
+      Rrecomproduct.reduce(function (res, value) {
+        if (!res[value.product_id]) {
+          res[value.product_id] = { product_id: value.product_id, count: 0 };
+          result.push(res[value.product_id])
+        }
+        res[value.product_id].count += 1;
+        return res;
+      }, {});
+      console.log("count", result)
 
-    //2. 按照次數由大到小排序，藉此找出前三個最符合的商品
-    let newresult =
-      (result.sort(function (a, b) {
-        return a.count < b.count ? 1 : -1;
-      })).map((d) => { return (d.product_id).toString() })
-    // console.log("max3", newresult)
+      //2. 按照次數由大到小排序，藉此找出前三個最符合的商品
+      let newresult =
+        (result.sort(function (a, b) {
+          return a.count < b.count ? 1 : -1;
+        })).map((d) => { return (d.product_id).toString() })
+      console.log("max3", newresult)
 
 
-    //3.進資料庫搜尋
-    let [finalresult] = await connection.execute(`SELECT * FROM products  WHERE id IN (${newresult})`)
-    console.log("finalresult", finalresult)
+      //3.進資料庫搜尋
+      let [finalresult] = await connection.execute(`${SQLimage}  WHERE id IN (${newresult[0]},${newresult[1]},${newresult[2]}) group by products.id`)
+      console.log("finalresult", finalresult)
 
-    res.json(finalresult);
+      res.json(finalresult);
+    }
+    return;
   } else {
-
-    next();
+    return;
   }
 });
 
@@ -284,6 +287,19 @@ router.get("/productlist/toy", async (req, res, next) => {
     filterBrand
   });
 });
+
+
+//商品細節頁圖片
+router.get("/productdetails", async (req, res, next) => {
+  if (req.query.id) {
+    //抓商品資料
+    let [AllImg] = await connection.execute(`SELECT image From product_images WHERE product_id=?`, [req.query.id]
+    );
+    console.log("allimg", AllImg)
+    res.json(AllImg);
+  }
+});
+
 
 
 module.exports = router;
