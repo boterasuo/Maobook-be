@@ -39,41 +39,7 @@ SELECT
   res.json(data);
 });
 
-// 新增貼文
-router.get("/Add", async (req, res, next) => {
-  // 剔除空格
-  let fsTag = req.body.firstTag.trim();
-  let mdTag = req.body.midTag.trim();
-  let lsTag = req.body.lastTag.trim();
-  // 合併Tags
-  const Tags = `${fsTag},${mdTag},${lsTag}`;
-  let [data, field] = await connection.execute(
-    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES (?,?,?,?,?)`,
-    [
-      req.body.id,
-      req.session.member.id,
-      req.body.image,
-      req.body.tittle,
-      req.body.content,
-      req.body.createdAt,
-      Tags,
-    ]
-  );
-  res.json(data);
-});
 
-// 對應的按讚列表 (貼文 x 按讚內容)
-router.get("/like-list/:likeUser", async (req, res) => {
-  let [data, fields] = await connection.execute(
-    `
-SELECT likes.*, users.name
-FROM diary_like AS likes
-JOIN users on likes.user_id = users.id 
-WHERE users.id = ?`,
-    [req.params.likeUser]
-  );
-  res.json(data);
-});
 
 // 對應的留言列表 (貼文 x 留言內容)
 router.get("/comment-list/:diaryId", async (req, res) => {
@@ -114,7 +80,7 @@ router.get("/card-pages", async (req, res, next) => {
 
   // 取得目前的總筆數
   let [total] = await connection.execute(
-  `
+    `
   SELECT COUNT(*) AS total FROM social_diary
   `
   );
@@ -166,5 +132,83 @@ SELECT
     data,
   });
 });
+
+// 按讚 先篩選
+router.post("/give-like", async (req, res, next) => {
+  //  req.session.member.id取得登入會員id
+  let [data, fields] = await connection.execute(
+    `
+  INSERT IGNORE INTO diary_like(user_id, diary_id) VALUES ('${req.session.member.id}','${req.body.cardID}')
+  `
+  );
+  res.json(data);
+});
+
+// 對應的按讚列表 (貼文 x 按讚內容)
+router.post("/like-list/:userID/:cardID", async (req, res) => {
+  let [data, fields] = await connection.execute(
+    `
+SELECT likes.*, users.name
+FROM diary_like AS likes
+JOIN users on likes.user_id = users.id 
+WHERE likes.user_id = ? AND likes.diary_id = ? `
+,[req.params.userID, req.params.cardID]
+  );
+  res.json(data);
+});
+
+// 處理圖片和資料驗證們
+const multer = require("multer");
+// 圖片存的位置
+
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, path.join(__dirname, "..","public", "uploads"));
+    },
+    filename: function(req, file, cb) {
+        console.log("multer-filename", file);
+        const ext = file.originalname.split(".").pop();
+        cb(null, `member-${Date.now()}.${ext}`);
+    },
+});
+
+const uploader = multer({
+    storage: storage,
+    // 過濾圖片
+    fileFilter: function(req, file, cb) {
+        console.log("file.mimetype", file.mimetype);
+        if(
+            file.mimetype !== "image/jpeg" &&
+            file.mimetype !== "image/jpg" &&
+            file.mimetype !== "image/png" 
+        ) {
+            cb(new Error("不接受的檔案型態"), false);
+        } else {
+            cb(null, true);
+        }
+    },
+    // 檔案尺寸
+    limits: {
+        fileSize: 1024 * 1024,
+    }
+});
+
+// [[[新增貼文]]]
+router.post("/Add", uploader.single("image"), async (req, res, next) => {
+  console.log("req.body.fsTag", req.body.fsTag);
+  const Tags = req.body.fsTag+','+req.body.mdTag+','+req.body.lsTag
+  // const Tags = Tag.toString();
+  // console.log('Tag',Tag);
+  console.log('Tags',Tags);
+
+  let [data, field] = await connection.execute(
+    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES ('${req.body.id}','${req.session.member.id}','${req.body.image}','${ req.body.tittle}','${req.body.content}', Now(),'${Tags}')`,
+  );
+  res.json(data);
+  console.log('req.body',req.body);
+});
+
+
+
 
 module.exports = router;
