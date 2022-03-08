@@ -41,13 +41,17 @@ SELECT
 
 // 新增貼文
 router.post("/Add", async (req, res, next) => {
-  uploader.single("image");
+  // uploader.single("image");
   // 剔除空格
-  let fsTag = req.body.firstTag;
-  let mdTag = req.body.midTag;
-  let lsTag = req.body.lastTag;
+  // let fsTag = 
+  // let mdTag = ;
+  // let lsTag = ;
   // 合併Tags
-  const Tags = `${fsTag},${mdTag},${lsTag}`;
+  const Tags = req.body.fsTag+','+req.body.mdTag+','+req.body.lsTag
+  // const Tags = Tag.toString();
+  // console.log('Tag',Tag);
+  console.log('Tags',Tags);
+
   let [data, field] = await connection.execute(
     `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES (?,?,?,?,?,?,?)`,
     [
@@ -190,7 +194,6 @@ const storage = multer.diskStorage({
     filename: function(req, file, cb) {
         console.log("multer-filename", file);
         const ext = file.originalname.split(".").pop();
-        // TODO: 有時間的話檔名改用 uuid
         cb(null, `member-${Date.now()}.${ext}`);
     },
 });
