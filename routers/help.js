@@ -63,9 +63,9 @@ router.get("/helpcard/:region", async (req, res) => {
 router.post("/helppost", async (req, res) => {
   let [result] = await connection.execute(
 //寫入發案者填寫的案件資訊
-    `INSERT INTO case_give (user_id_giver, category_id, tags, date, region, price, title, content, created_at, status, image) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO case_give (user_id_giver, category, tag_id, date, region, price, title, content, created_at, status, image) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
     [ 
-      req.body.user,
+      req.session.member.id,
       req.body.category,
       req.body.tag,
       req.body.date,
@@ -73,7 +73,7 @@ router.post("/helppost", async (req, res) => {
       req.body.price,
       req.body.title,
       req.body.content,
-      GETDATE(),
+      moment().format('YYYY-MM-DD kk:mm:ss'),
       0,
       req.body.image,
     ]);
@@ -93,19 +93,22 @@ router.get("/helpdetails/:id", async (req, res) => {
 });
 
 //案件細節頁：接案者應徵表單
-router.post("/helpdetails", async (req, res) => {
-  let [data, fields] = await connection.execute(
+
+
+router.post("/helptake", async (req, res) => {
+  let [response] = await connection.execute(
+  
 //寫入應徵者填寫資訊
-    `INSERT INTO case_take (user_id_taker, contact, content, status) VALUES (?,?,?,?)`,
+    `INSERT INTO case_take (case_id, user_id_taker, contact, content, status) VALUES (?, ?, ?, ?, ?)`,
     [
-      req.body.user,
+      req.body.caseid,
+      req.session.member.id,
       req.body.contact,
       req.body.content,
-      0
+      0,
     ]);
   res.json({ message: 'ok' });
 });
-
 
 // MEMBER 歷史紀錄：該會員的發案紀錄
 router.get("/memberGiveHistory/:user_id_giver", async (req, res) => {
