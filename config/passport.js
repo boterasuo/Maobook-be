@@ -65,9 +65,10 @@ module.exports = function (passport) {
         await Main();
         let signUpTime = moment().format('YYYY-MM-DD kk:mm:ss');
         let [createFBuser] = await connection.execute(
-          "INSERT INTO users (name, email, image, fb_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+          "INSERT INTO users (name, email, password, image, fb_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
             profile.displayName, 
-            profile.emails[0].value, 
+            profile.emails[0].value,
+            "fbPassword", 
             savedfilename, 
             profile.id,
             accessToken, 
@@ -106,9 +107,10 @@ module.exports = function (passport) {
       console.log("first login by Google!")
       let signUpTime = moment().format('YYYY-MM-DD kk:mm:ss');
       let [createGoogleuser] = await connection.execute(
-        "INSERT INTO users (name, email, image, google_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+        "INSERT INTO users (name, email, password, image, google_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
           profile.displayName, 
           profile.emails[0].value, 
+          "googlePassword",
           filename, 
           profile.id,
           accessToken, 
