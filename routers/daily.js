@@ -157,22 +157,6 @@ WHERE likes.user_id = ? AND likes.diary_id = ? `
   res.json(data);
 });
 
-// [[[新增貼文]]]
-router.post("/Add", async (req, res, next) => {
-uploader.single("image");
- 
-  const Tags = req.body.fsTag+','+req.body.mdTag+','+req.body.lsTag
-  // const Tags = Tag.toString();
-  // console.log('Tag',Tag);
-  console.log('Tags',Tags);
-
-  let [data, field] = await connection.execute(
-    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES ('${req.body.id}','${req.session.member.id}','${req.body.image}','${ req.body.tittle}','${req.body.content}', Now(),'${Tags}')`,
-  );
-  res.json(data);
-  console.log('req.body',req.body);
-});
-
 // 處理圖片和資料驗證們
 const multer = require("multer");
 // 圖片存的位置
@@ -208,6 +192,23 @@ const uploader = multer({
         fileSize: 1024 * 1024,
     }
 });
+
+// [[[新增貼文]]]
+router.post("/Add", uploader.single("image"), async (req, res, next) => {
+  console.log("req.body.fsTag", req.body.fsTag);
+  const Tags = req.body.fsTag+','+req.body.mdTag+','+req.body.lsTag
+  // const Tags = Tag.toString();
+  // console.log('Tag',Tag);
+  console.log('Tags',Tags);
+
+  let [data, field] = await connection.execute(
+    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES ('${req.body.id}','${req.session.member.id}','${req.body.image}','${ req.body.tittle}','${req.body.content}', Now(),'${Tags}')`,
+  );
+  res.json(data);
+  console.log('req.body',req.body);
+});
+
+
 
 
 module.exports = router;
