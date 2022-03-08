@@ -93,8 +93,8 @@ app.use('/api/calenderForm', schedualFormRouter)
 //商店用router
 let storeRouter = require("./routers/store");
 app.use("/api/store", storeRouter);
-let cartRouter = require("./routers/cart");
-app.use("/api/cart", cartRouter);
+// let cartRouter = require("./routers/cart");
+// app.use("/api/cart", cartRouter);
 let orderRouter = require("./routers/order");
 app.use("/api/order", orderRouter);
 

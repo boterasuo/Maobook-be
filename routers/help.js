@@ -61,11 +61,23 @@ router.get("/helpcard/:region", async (req, res) => {
 
 //發案表單
 router.post("/helppost", async (req, res) => {
-  let [data, fields] = await connection.execute(
+  let [result] = await connection.execute(
 //寫入發案者填寫的案件資訊
-    `INSERT INTO case_give (user_id_giver, category_id, tags, date, region, price, title, content, created_at, status, image) VALUES
-    ('[${req.params.id}', '${req.params.categoty}', '${req.params.tag}', '${req.params.date}', '${req.params.region}', '${req.params.price}', '${req.params.title}', '${req.params.content}', '${GETDATE()}}','0', '${req.params.image}')`);
-  res.json(data);
+    `INSERT INTO case_give (user_id_giver, category_id, tags, date, region, price, title, content, created_at, status, image) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    [ 
+      req.body.user,
+      req.body.category,
+      req.body.tag,
+      req.body.date,
+      req.body.region,
+      req.body.price,
+      req.body.title,
+      req.body.content,
+      GETDATE(),
+      0,
+      req.body.image,
+    ]);
+  res.json({ message: 'ok' });
 });
 
 //案件細節頁（案件列表或互助專區點開）
@@ -84,28 +96,22 @@ router.get("/helpdetails/:id", async (req, res) => {
 router.post("/helpdetails", async (req, res) => {
   let [data, fields] = await connection.execute(
 //寫入應徵者填寫資訊
-    `INSERT INTO case_take (user_id_taker, contact, content, status) VALUES
-    ('[${req.params.id}', '${req.params.contact}', '${req.params.content}', '0')`);
-  res.json(data);
+    `INSERT INTO case_take (user_id_taker, contact, content, status) VALUES (?,?,?,?)`,
+    [
+      req.body.user,
+      req.body.contact,
+      req.body.content,
+      0
+    ]);
+  res.json({ message: 'ok' });
 });
-
-//案件細節頁：發案者編輯案件內容
-router.put("/helpdetails", async (req, res) => {
-  let [data, fields] = await connection.execute(
-//修改案件內容
-    `UPDATE case_give SET title=?, date=?, price=?, region=?, content=?, category=?, tags=?, img=? WHERE id = ${req.params.id}`, [req.params.title,req.params.date, req.params.price, req.params.region, req.params.content, req.params.category, req.params.tags, req.params.img]);
-  res.json(data);
-});
-
 
 
 // MEMBER 歷史紀錄：該會員的發案紀錄
 router.get("/memberGiveHistory/:user_id_giver", async (req, res) => {
   let [data, fields] = await connection.execute(
-// http://localhost:3002/api/help/memberGiveHistory/
-// 抓出該日的所有案件及細節 再JOIN case_take抓應徵人數
 // 再JOIN 抓出tag名稱
-    `SELECT give.*, COUNT(case_take.user_id_taker) AS taker_count, DAY(DATE), MONTH(DATE), YEAR(DATE), case_tag.name AS tag_name, users.id AS userid FROM case_give AS give JOIN case_take ON give.id = case_take.case_id JOIN case_tag ON give.tag_id = case_tag.id JOIN users ON give.user_id_giver =users.id WHERE user_id_giver = ? GROUP BY give.id ORDER BY give.region DESC;`,[req.params.user_id_giver]);
+    `SELECT give.*, COUNT(case_take.user_id_taker) AS taker_count, DAY(DATE), MONTH(DATE), YEAR(DATE), case_tag.name AS tag_name, users.id AS userid FROM case_give AS give JOIN case_take ON give.id = case_take.case_id JOIN case_tag ON give.tag_id = case_tag.id JOIN users ON give.user_id_giver =users.id WHERE user_id_giver = ? GROUP BY give.id ORDER BY give.region ASC;`,[req.params.user_id_giver]);
   res.json(data);
 });
 
