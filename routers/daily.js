@@ -39,34 +39,7 @@ SELECT
   res.json(data);
 });
 
-// 新增貼文
-router.post("/Add", async (req, res, next) => {
-  // uploader.single("image");
-  // 剔除空格
-  // let fsTag = 
-  // let mdTag = ;
-  // let lsTag = ;
-  // 合併Tags
-  const Tags = req.body.fsTag+','+req.body.mdTag+','+req.body.lsTag
-  // const Tags = Tag.toString();
-  // console.log('Tag',Tag);
-  console.log('Tags',Tags);
 
-  let [data, field] = await connection.execute(
-    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES (?,?,?,?,?,?,?)`,
-    [
-      req.body.id,
-      req.session.member.id,
-      req.body.image,
-      req.body.tittle,
-      req.body.content,
-      req.body.createdAt,
-      Tags,
-    ]
-  );
-  res.json(data);
-  console.log('req.body',req.body);
-});
 
 // 對應的留言列表 (貼文 x 留言內容)
 router.get("/comment-list/:diaryId", async (req, res) => {
@@ -184,9 +157,26 @@ WHERE likes.user_id = ? AND likes.diary_id = ? `
   res.json(data);
 });
 
+// [[[新增貼文]]]
+router.post("/Add", async (req, res, next) => {
+uploader.single("image");
+ 
+  const Tags = req.body.fsTag+','+req.body.mdTag+','+req.body.lsTag
+  // const Tags = Tag.toString();
+  // console.log('Tag',Tag);
+  console.log('Tags',Tags);
+
+  let [data, field] = await connection.execute(
+    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES ('${req.body.id}','${req.session.member.id}','${req.body.image}','${ req.body.tittle}','${req.body.content}', Now(),'${Tags}')`,
+  );
+  res.json(data);
+  console.log('req.body',req.body);
+});
+
 // 處理圖片和資料驗證們
 const multer = require("multer");
 // 圖片存的位置
+
 const storage = multer.diskStorage({
     destination: function(req, file, cb) {
         cb(null, path.join(__dirname, "..","public", "uploads"));

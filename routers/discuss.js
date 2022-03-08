@@ -78,19 +78,9 @@ router.post("/AddComment", async (req, res, next) => {
 });
 
 // 新增貼文
-router.get("/Add", async (req, res, next) => {
+router.post("/Add", async (req, res, next) => {
   let [data, field] = await connection.execute(
-    `INSERT INTO social_diary(id, user_id, category_id, tittle, content, created_at) VALUES (?,?,?,?,?,?)`,
-    [
-      req.body.id,
-      req.session.member.id,
-      req.body.categoryID,
-      req.body.tittle,
-      req.body.content,
-      req.body.createdAt,
-      Tags,
-    ]
-  );
+    `INSERT INTO social_diary(id, user_id, category_id, tittle, content, created_at) VALUES ('${req.body.id}','${req.session.member.id},'${req.body.categoryID}','${req.body.tittle}','${ req.body.content},'${req.body.content},NOW(),'${Tags})`);
   res.json(data);
 });
 
