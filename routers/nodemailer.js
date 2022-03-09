@@ -2,12 +2,33 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  service:"Gmail",
+  secureConnection:true,
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASSWORD,
   },
+  tls:
+  {
+    rejectUnauthorized:false
+  }
+
 });
+
+// let transporter = nodemailer.createTransport(smtpTransport({
+//   host: "outmail.abc.co.th", // hostname
+//   secure: false, // use SSL
+//   port: 25, // port for secure SMTP
+//   auth: {
+//       user: "username@abc.co.th",
+//       pass: "passwordmail"
+//   },
+//   tls: {
+//       rejectUnauthorized: false
+//   }
+// }));
+
+
 
 function sendEmail(email) {
   
@@ -68,6 +89,9 @@ function sendCaseMail(email,mailType) {
     }
     console.log("信件發送:", info.response);
   });
+
+
+
 }
 
 

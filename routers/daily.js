@@ -34,6 +34,7 @@ SELECT
 ) Card
 
   LEFT JOIN users ON Card.user_id = users.id
+  ORDER BY Card.created_at DESC
   `
   );
   res.json(data);
@@ -122,7 +123,7 @@ SELECT
 ) Card
 
   LEFT JOIN users ON Card.user_id = users.id
-   ORDER BY created_at LIMIT ? OFFSET ?`,
+   ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     [perPage, offset]
   );
 
@@ -161,6 +162,7 @@ WHERE likes.user_id = ? AND likes.diary_id = ? `
 const multer = require("multer");
 // 圖片存的位置
 
+ 
 const storage = multer.diskStorage({
     destination: function(req, file, cb) {
         cb(null, path.join(__dirname, "..","public", "uploads"));
@@ -195,17 +197,17 @@ const uploader = multer({
 
 // [[[新增貼文]]]
 router.post("/Add", uploader.single("image"), async (req, res, next) => {
-  console.log("req.body.fsTag", req.body.fsTag);
   const Tags = req.body.fsTag+','+req.body.mdTag+','+req.body.lsTag
   // const Tags = Tag.toString();
   // console.log('Tag',Tag);
   console.log('Tags',Tags);
+  let filename = "/static/uploads/" + req.file.filename;
 
   let [data, field] = await connection.execute(
-    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES ('${req.body.id}','${req.session.member.id}','${req.body.image}','${ req.body.tittle}','${req.body.content}', Now(),'${Tags}')`,
+    `INSERT INTO social_diary(id, user_id, image, tittle, content, created_at, tags) VALUES ('${req.body.id}','${req.session.member.id}','${filename}','${ req.body.tittle}','${req.body.content}', Now(),'${Tags}')`,
   );
   res.json(data);
-  console.log('req.body',req.body);
+  // console.log('req.body',req.body);
 });
 
 

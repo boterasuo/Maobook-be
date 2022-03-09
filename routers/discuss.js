@@ -37,6 +37,7 @@ router.get("/bar-list", async (req, res, next) => {
   
   LEFT JOIN discussion_category ON discussion_category.id = secondCombine.category_id
   LEFT JOIN users ON users.id = secondCombine.user_id
+  ORDER BY secondCombine.created_at DESC
        
     `
   );
@@ -62,7 +63,9 @@ router.get("/comment-list/:barId", async (req, res) => {
     ` SELECT discussion.id, discussion.discussion_id, users.name, users.image AS avatar, discussion.comment, discussion.created_at
   FROM discussion_comment AS discussion
   JOIN users on discussion.user_id = users.id
-  WHERE discussion.discussion_id = ?`,
+  WHERE discussion.discussion_id = ?
+  ORDER BY discussion.created_at DESC
+  `,
     [req.params.barId]
   );
   res.json(data);
