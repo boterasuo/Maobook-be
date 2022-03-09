@@ -25,7 +25,7 @@ module.exports = function (passport) {
       const filename = `FB-${Date.now()}.jpg`;
       const urlPath = path.join(__dirname, "..", "public", "uploads", filename);
 
-      async function downloadImage () {
+      async function downloadImage (success, fail) {
         const url = `https://graph.facebook.com/${profile.id}/picture?width=200&height=200&access_token=${accessToken}`
         // axios download
         let response = await axios({
@@ -34,43 +34,48 @@ module.exports = function (passport) {
           responseType: "stream",
         })
         // pipe the result stream into a file on disc
-        response.data.pipe(Fs.createWriteStream(urlPath));
+        const writer = Fs.createWriteStream(urlPath);
+        response.data.pipe(writer);
         // return a promise and resolve when download finishes
         return new Promise((resolve, rject) => {
-          response.data.on("end", () => {
+          writer.on("finish", () => {
             console.log("download success!")
-            resolve();
+            resolve(success);
           })
-          response.data.on("error", () => {
+          writer.on("error", () => {
             console.log("download fail!")
-            reject();
+            reject(fail);
           })
         })
       }
 
-      async function Main() {
-        const data = await downloadImage();
-        console.log("DATA", data);
-      }
-      Main();
+      
       
       let savedfilename = "/static/uploads/" + filename;
       let [findUser] = await connection.execute("SELECT * FROM users WHERE fb_id = ?", [profile.id]);
       // console.log("findUser", findUser);
       if (!findUser.length) {
         // 若資料庫內無資料 --> 初次FB登入 --> 寫入資料庫
-        console.log("first login by FB!")
+        console.log("first login by FB!");
+        // 先處理圖片下載 + 儲存
+        async function Main() {
+          const data = await downloadImage();
+          console.log("DATA", data);
+        }
+        await Main();
         let signUpTime = moment().format('YYYY-MM-DD kk:mm:ss');
         let [createFBuser] = await connection.execute(
-          "INSERT INTO users (name, email, image, fb_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+          "INSERT INTO users (name, email, password, image, fb_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
             profile.displayName, 
-            profile.emails[0].value, 
+            profile.emails[0].value,
+            "fbPassword", 
             savedfilename, 
             profile.id,
             accessToken, 
             1, 
             signUpTime]);
-        user = {...user, 'id':createFBuser.insertId}          
+        user = {...user, 'id':createFBuser.insertId};
+                  
       } else {
         console.log("NOT first login by FB!")
         let [updateFBuser] = await connection.execute(
@@ -102,9 +107,10 @@ module.exports = function (passport) {
       console.log("first login by Google!")
       let signUpTime = moment().format('YYYY-MM-DD kk:mm:ss');
       let [createGoogleuser] = await connection.execute(
-        "INSERT INTO users (name, email, image, google_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+        "INSERT INTO users (name, email, password, image, google_id, token, valid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
           profile.displayName, 
           profile.emails[0].value, 
+          "googlePassword",
           filename, 
           profile.id,
           accessToken, 
