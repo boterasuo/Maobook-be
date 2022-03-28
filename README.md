@@ -8,7 +8,7 @@
 
 -   /routers：各項功能之 RESTful API
 -   /sessions：儲存已登入使用者的 session 資料
--   /public：儲存使用者上傳之靜態圖片檔案 (/uploads) 或網頁中使用的商品圖 (products)
+-   /public：儲存使用者上傳之靜態圖片檔案 (/uploads) 或網頁中使用的商品圖 (/products)
 
 ### 協作者 & 負責功能之 routers
 
