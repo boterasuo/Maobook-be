@@ -40,16 +40,14 @@ module.exports = function (passport) {
         return new Promise((resolve, rject) => {
           writer.on("finish", () => {
             console.log("download success!")
-            resolve(success);
+            resolve("success");
           })
           writer.on("error", () => {
             console.log("download fail!")
-            reject(fail);
+            reject("fail");
           })
         })
       }
-
-      
       
       let savedfilename = "/static/uploads/" + filename;
       let [findUser] = await connection.execute("SELECT * FROM users WHERE fb_id = ?", [profile.id]);
@@ -59,7 +57,7 @@ module.exports = function (passport) {
         console.log("first login by FB!");
         // 先處理圖片下載 + 儲存
         async function Main() {
-          const data = await downloadImage();
+          const data = downloadImage();
           console.log("DATA", data);
         }
         await Main();
